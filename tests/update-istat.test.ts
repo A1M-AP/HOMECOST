@@ -1,6 +1,5 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-// @ts-expect-error script JavaScript senza dichiarazioni di tipo
 import { parseObservations, linkingCoefficient, mergeSeries, yoy, validate } from '../scripts/update-istat.mjs';
 
 const SAMPLE = `<message:DataSet><Series FREQ="M" REF_AREA="IT" DATA_TYPE="101" MEASURE="4" ECOICOP_2="00ST">

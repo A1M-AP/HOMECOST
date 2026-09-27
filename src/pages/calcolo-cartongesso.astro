@@ -263,11 +263,11 @@ const faq = [
 
 <script>
   import { initCalculator, radioValue, selectValue } from '../scripts/calc-engine.ts';
-  import { calcCartongesso, presentCartongesso, summaryCartongesso } from '../lib/calc/cartongesso.ts';
+  import { calcCartongesso, presentCartongesso, summaryCartongesso, type CartongessoInput } from '../lib/calc/cartongesso.ts';
   import { int } from '../lib/format.ts';
 
   initCalculator({
-    read: (v, form) => ({
+    read: (v, form): CartongessoInput => ({
       lunghezza: v.lunghezza!,
       altezza: v.altezza!,
       lati: radioValue(form, 'lati') === '1' ? 1 : 2,

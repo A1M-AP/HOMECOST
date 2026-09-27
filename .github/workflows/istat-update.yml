@@ -7,9 +7,6 @@ on:
   schedule:
     - cron: '23 7 * * *' # ogni giorno alle 7:23 UTC (l'ISTAT pubblica i dati FOI a metà mese)
   workflow_dispatch:
-  push:
-    branches: ['claude/**']
-    paths: ['scripts/update-istat.mjs', '.github/workflows/istat-update.yml']
 
 permissions:
   contents: write

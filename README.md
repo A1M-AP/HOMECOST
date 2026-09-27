@@ -42,17 +42,21 @@ src/
     site.ts                dati del sito, prezzo energia predefinito, analytics, pubblicità, banner cookie
     affiliates.ts          TUTTI i link e i testi di affiliazione (file unico)
     calculators.ts         elenco dei calcolatori (menu, homepage, footer, correlati, sitemap)
+    prices.ts              prezzi base delle stime di spesa (rivalutati con l'indice ISTAT)
   lib/
     format.ts              lettura e formattazione dei numeri all'italiana
     calc/*.ts              formule pure di ogni calcolatore (testate in tests/)
   scripts/
     calc-engine.ts         validazione, ricalcolo in tempo reale, "Copia risultato", "Stampa"
     consent.ts             gestione del consenso cookie e caricamento degli script dopo il consenso
+    motion.ts              animazioni (comparsa allo scroll, numeri che scorrono)
   components/              Header, Footer, AffiliateBox, ProductBox, AdSlot, FAQ, Field, CookieBanner…
   layouts/                 BaseLayout (SEO, Open Graph), CalculatorLayout, PageLayout
   pages/                   una pagina per URL
   styles/global.css        stile unico, mobile-first, senza framework
 tests/calc.test.ts         test unitari delle formule
+scripts/update-istat.mjs   download automatico degli indici ISTAT (usato da GitHub Actions)
+.github/workflows/         workflow giornaliero di aggiornamento ISTAT
 netlify.toml               configurazione Netlify
 wrangler.jsonc             configurazione Cloudflare Workers
 ```
@@ -66,39 +70,47 @@ Ogni calcolatore è diviso in due parti:
 
 ---
 
-## Aggiornare gli indici ISTAT
+## Indici ISTAT: aggiornamento automatico
 
-Il calcolatore dell'affitto legge gli indici da **`public/data/istat-foi.json`**. Il file contiene per ora solo
-**segnaposto** (`"DA AGGIORNARE CON DATI UFFICIALI ISTAT"`): finché non inserisci dati reali, la pagina chiede
-all'utente di digitare la variazione percentuale a mano.
+Gli indici **FOI senza tabacchi** sono in `public/data/istat-foi.json` e si aggiornano da soli:
 
-1. Scarica gli indici **FOI senza tabacchi** dal sito ISTAT (<https://www.istat.it/>, sezione prezzi al consumo;
-   in alternativa dal servizio Rivaluta o dalla banca dati dell'Istituto).
-2. Apri `public/data/istat-foi.json` e scrivi un mese per riga nel formato `"AAAA-MM": valore`, con il **punto** come
-   separatore decimale e **senza virgolette** attorno al numero. Sostituisci i segnaposto.
-3. Aggiorna `"_aggiornato"` con la data di oggi (`AAAA-MM-GG`): viene mostrata nella pagina.
-4. Pubblica (commit + push: Netlify o Cloudflare ricostruiscono il sito da soli).
+1. ogni giorno il workflow GitHub Actions `.github/workflows/istat-update.yml` esegue
+   `scripts/update-istat.mjs`, che scarica gli indici dall'API ufficiale SDMX dell'ISTAT
+   (<https://esploradati.istat.it/>);
+2. se ci sono dati nuovi (l'ISTAT pubblica il FOI verso metà mese) il workflow fa un commit su `main`;
+3. Cloudflare ripubblica il sito: il calcolatore dell'affitto usa i nuovi indici e i **prezzi di tutti i
+   calcolatori vengono rivalutati** (vedi sotto).
 
-Esempio di struttura (i numeri qui sotto sono **finti**, non usarli):
+Dettagli tecnici:
 
-```json
-{
-  "_aggiornato": "2026-10-16",
-  "2025-09": 100.0,
-  "2026-09": 101.5
-}
+- dal 2026 l'ISTAT pubblica il FOI in **base 2025=100**; i mesi fino a dicembre 2025 (base 2015=100) sono
+  riportati in base 2025 dividendoli per il **coefficiente di raccordo** (media 2025 in base 2015 ÷ 100), così
+  le variazioni a cavallo del cambio di base sono corrette;
+- prima di scrivere il file lo script confronta le variazioni annue calcolate con quelle **ufficiali pubblicate
+  dall'ISTAT**: se non coincidono, o se i dati sono incompleti o non plausibili, termina con errore e non
+  modifica nulla (GitHub ti avvisa via e-mail del workflow fallito);
+- puoi lanciarlo a mano da GitHub → Actions → "Aggiorna indici ISTAT" → "Run workflow", oppure in locale con
+  `node scripts/update-istat.mjs` (`--dry-run` per vedere i dati senza scrivere);
+- le chiavi che iniziano con `_` sono note (fonte, base, data di aggiornamento mostrata nella pagina);
+- se il mese che serve all'utente non è ancora pubblicato, la pagina permette di inserire la variazione a mano.
+
+Aggiornamento manuale (solo se serve): scrivi `"AAAA-MM": valore` con il punto decimale, tutti nella stessa base,
+e aggiorna `"_aggiornato"` (`AAAA-MM-GG`).
+
+## Prezzi e stime di spesa
+
+I calcolatori di pittura, piastrelle, cartongesso, parquet e consumi mostrano una **spesa stimata** calcolata con
+prezzi medi indicativi, che l'utente può modificare. I prezzi base sono in **`src/config/prices.ts`**, riferiti al
+mese `PRICE_BASE_MONTH`, e a ogni build vengono rivalutati con la variazione dell'indice ISTAT FOI tra quel mese e
+l'ultimo disponibile:
+
+```
+prezzo mostrato = prezzo base × (indice ultimo mese ÷ indice del mese dei prezzi base)
 ```
 
-Note:
-
-- Le chiavi che iniziano con `_` sono note e vengono ignorate; i valori non numerici sono trattati come mancanti.
-- Per calcolare la variazione servono **due mesi**: il mese di riferimento e lo stesso mese dell'anno precedente.
-  Conviene quindi tenere nel file almeno gli ultimi 24 mesi.
-- La variazione viene arrotondata a un decimale, come nelle tabelle ISTAT.
-- Tutti i valori devono avere **la stessa base**. Quando l'ISTAT cambia base, converti i valori con i coefficienti di
-  raccordo pubblicati dall'Istituto, oppure lascia che l'utente inserisca la variazione ufficiale a mano.
-- Appena il file contiene dati reali, alla build successiva la pagina propone in automatico la modalità
-  "Calcolala dagli indici FOI".
+Finché l'indice del mese base non è pubblicato il coefficiente vale 1. Se aggiorni i prezzi base con listini
+reali, aggiorna anche `PRICE_BASE_MONTH`. Nota: l'indice generale FOI misura l'inflazione media; per l'energia
+elettrica, che segue il mercato, il prezzo resta comunque solo indicativo.
 
 ## Link di affiliazione
 
@@ -199,7 +211,7 @@ Dopo la pubblicazione, invia `https://homecost.it/sitemap.xml` a Google Search C
 ### Prima del lancio: checklist
 
 - [ ] `AMAZON_TAG` e URL dei box di affiliazione (ora puntano a `example.com`) in `src/config/affiliates.ts`
-- [ ] Indici ISTAT reali in `public/data/istat-foi.json`
+- [ ] Prezzi base indicativi in `src/config/prices.ts` (verificali con listini reali)
 - [ ] E-mail e dati del titolare (`src/config/site.ts`, `/contatti/`, pagine legali)
 - [ ] Testi di privacy policy, cookie policy e note legali: completare le parti `[DA COMPLETARE]` e farle verificare
 - [ ] ID AdSense / Analytics (facoltativi) e, per AdSense, `ads.txt` e CMP certificata
