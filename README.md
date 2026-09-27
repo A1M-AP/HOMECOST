@@ -53,6 +53,8 @@ src/
   pages/                   una pagina per URL
   styles/global.css        stile unico, mobile-first, senza framework
 tests/calc.test.ts         test unitari delle formule
+netlify.toml               configurazione Netlify
+wrangler.jsonc             configurazione Cloudflare Workers
 ```
 
 Ogni calcolatore è diviso in due parti:
@@ -165,15 +167,32 @@ Il sito è una cartella statica (`dist/`): funziona su qualsiasi hosting statico
 2. Le impostazioni sono già in `netlify.toml` (comando `npm run build`, cartella `dist`, Node 22).
 3. In "Domain management" aggiungi `homecost.it` e attiva HTTPS.
 
-### Cloudflare Pages
+### Cloudflare Workers (importazione del repository)
+
+È il percorso proposto oggi da Cloudflare con "Workers & Pages" → "Create" → "Import a repository".
+La configurazione è in `wrangler.jsonc`: cartella `dist/` come file statici, pagina `404.html` per gli indirizzi
+inesistenti e build automatica (`npm run build`) prima di ogni deploy.
+
+1. Importa il repository e lascia il comando di deploy predefinito `npx wrangler deploy`
+   (il comando di build può restare vuoto oppure essere `npm run build`).
+2. Il **nome del Worker** deve coincidere con `"name"` in `wrangler.jsonc` (`homecost`): se nella dashboard ne hai
+   scelto un altro, cambia uno dei due.
+3. Il branch di produzione è `main`: pubblica solo dopo aver unito lì il codice del sito.
+4. Se serve, aggiungi la variabile d'ambiente `NODE_VERSION = 22` (Astro richiede Node 22.12 o successivo).
+5. In "Settings" → "Domains & Routes" collega `homecost.it`.
+
+Per provare in locale la versione servita da Cloudflare: `npx wrangler dev`.
+
+### Cloudflare Pages (alternativa)
 
 1. "Workers & Pages" → "Create" → "Pages" → collega il repository.
 2. Preset framework **Astro**, comando di build `npm run build`, cartella di output `dist`.
 3. Aggiungi la variabile d'ambiente `NODE_VERSION = 22`.
 4. In "Custom domains" collega `homecost.it`.
 
-Il file `public/_headers` (cache lunga per `/_astro/*`, breve per `/data/*`, header di sicurezza) è letto da entrambe
-le piattaforme. Gli URL terminano con `/` e sono generati come `cartella/index.html`: non servono redirect.
+Il file `public/_headers` (cache lunga per `/_astro/*`, breve per `/data/*`, header di sicurezza) è letto da Netlify,
+Cloudflare Pages e Cloudflare Workers. Gli URL terminano con `/` e sono generati come `cartella/index.html`: non
+servono redirect.
 
 Dopo la pubblicazione, invia `https://homecost.it/sitemap.xml` a Google Search Console.
 
