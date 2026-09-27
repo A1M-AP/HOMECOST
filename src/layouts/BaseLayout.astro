@@ -69,5 +69,9 @@ const toJson = (data: unknown) => JSON.stringify(data).replace(/</g, '\\u003c');
     </main>
     <Footer />
     <CookieBanner />
+    <script>
+      import { initReveal } from '../scripts/motion.ts';
+      initReveal();
+    </script>
   </body>
 </html>

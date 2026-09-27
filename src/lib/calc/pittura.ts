@@ -156,7 +156,10 @@ export function presentPittura(i: PitturaInput, r: PitturaResult): Presentation 
     const key = `can${String(f.size).replace('.', '')}`;
     text[key] = `${plural(f.pezzi, 'barattolo', 'barattoli')} (${fmt(f.litri, 1)} L)`;
   }
-  return { text, flags: { soffitto: i.soffitto, aperture: r.aperture > 0, prezzi: r.criterio === 'prezzo' } };
+  return {
+    text,
+    flags: { soffitto: i.soffitto, aperture: r.aperture > 0, prezzi: r.criterio === 'prezzo', costo: r.migliore.costo !== null },
+  };
 }
 
 export function summaryPittura(i: PitturaInput, r: PitturaResult): string {

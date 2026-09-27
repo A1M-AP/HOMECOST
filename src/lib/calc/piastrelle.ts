@@ -5,7 +5,7 @@
  * piastrelle = m² con scarto ÷ (lato A × lato B)
  * scatole = m² con scarto ÷ m² per scatola (per eccesso)
  */
-import { fmt, int } from '../format.ts';
+import { euro, fmt, int } from '../format.ts';
 import { ceilSafe, withWaste, type CalcOutcome, type Presentation } from './utils.ts';
 
 /** Scarto consigliato per tipo di posa (%). */
@@ -18,6 +18,8 @@ export interface PiastrelleInput {
   latoB: number;
   m2Scatola: number;
   scarto: number;
+  /** Prezzo al m² (facoltativo): se presente si calcola la spesa stimata. */
+  prezzoM2?: number | null;
 }
 
 export interface PiastrelleResult {
@@ -29,6 +31,8 @@ export interface PiastrelleResult {
   m2Acquistati: number;
   piastrellePerScatola: number;
   avanzo: number;
+  /** Spesa stimata (scatole acquistate × prezzo al m²), null senza prezzo. */
+  costo: number | null;
 }
 
 export function calcPiastrelle(i: PiastrelleInput): CalcOutcome<PiastrelleResult> {
@@ -53,6 +57,7 @@ export function calcPiastrelle(i: PiastrelleInput): CalcOutcome<PiastrelleResult
       m2Acquistati,
       piastrellePerScatola: Math.max(1, Math.round(i.m2Scatola / areaPiastrella)),
       avanzo: m2Acquistati - m2ConScarto,
+      costo: i.prezzoM2 ? m2Acquistati * i.prezzoM2 : null,
     },
   };
 }
@@ -70,7 +75,9 @@ export function presentPiastrelle(i: PiastrelleInput, r: PiastrelleResult): Pres
       formato: `${fmt(i.latoA, 1)} × ${fmt(i.latoB, 1)} cm`,
       perScatola: `circa ${int(r.piastrellePerScatola)}`,
       scarto: `${fmt(i.scarto, 1)}%`,
+      costo: r.costo !== null ? euro(r.costo) : '',
     },
+    flags: { costo: r.costo !== null },
   };
 }
 
@@ -80,5 +87,8 @@ export function summaryPiastrelle(i: PiastrelleInput, r: PiastrelleResult): stri
     `Superficie con scarto: ${fmt(r.m2ConScarto, 2)} m²`,
     `Piastrelle necessarie: ${int(r.piastrelle)}`,
     `Scatole da acquistare: ${int(r.scatole)} (${fmt(r.m2Acquistati, 2)} m²)`,
-  ].join('\n');
+    r.costo !== null ? `Spesa stimata: ${euro(r.costo)} (${euro(i.prezzoM2 ?? 0)}/m²)` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }

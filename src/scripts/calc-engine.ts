@@ -8,6 +8,7 @@
  */
 import { fmt, parseNumber } from '../lib/format.ts';
 import type { CalcOutcome, Presentation } from '../lib/calc/utils.ts';
+import { setResultText } from './motion.ts';
 
 export type Values = Record<string, number | null>;
 
@@ -108,7 +109,7 @@ export function initCalculator<I, R>(setup: CalculatorSetup<I, R>): CalculatorCo
 
   function render(p: Presentation): void {
     for (const [key, text] of Object.entries(p.text)) {
-      resultEl!.querySelectorAll<HTMLElement>(`[data-out="${key}"]`).forEach((el) => (el.textContent = text));
+      resultEl!.querySelectorAll<HTMLElement>(`[data-out="${key}"]`).forEach((el) => setResultText(el, text));
     }
     for (const [key, show] of Object.entries(p.flags ?? {})) {
       root!.querySelectorAll<HTMLElement>(`[data-show="${key}"]`).forEach((el) => (el.hidden = !show));

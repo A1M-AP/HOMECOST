@@ -3,8 +3,18 @@ import CalculatorLayout from '../layouts/CalculatorLayout.astro';
 import Field from '../components/Field.astro';
 import ProductBox from '../components/ProductBox.astro';
 import { calcPiastrelle, presentPiastrelle, TILE_WASTE, type PiastrelleInput } from '../lib/calc/piastrelle';
+import { currentPrices } from '../lib/istat-data';
 
-const defaults: PiastrelleInput = { superficie: 20, latoA: 60, latoB: 60, m2Scatola: 1.44, scarto: TILE_WASTE.dritta };
+const { prices, note: priceNote } = currentPrices();
+
+const defaults: PiastrelleInput = {
+  superficie: 20,
+  latoA: 60,
+  latoB: 60,
+  m2Scatola: 1.44,
+  scarto: TILE_WASTE.dritta,
+  prezzoM2: prices.piastrelleM2,
+};
 const outcome = calcPiastrelle(defaults);
 if (!outcome.ok) throw new Error('Valori predefiniti non validi');
 const p = presentPiastrelle(defaults, outcome.result);
@@ -80,6 +90,14 @@ const faq = [
     </div>
   </fieldset>
 
+  <details class="advanced">
+    <summary>Prezzo e spesa stimata</summary>
+    <p class="hint">{priceNote} Inserisci il prezzo delle piastrelle che hai scelto.</p>
+    <div class="fields">
+      <Field id="prezzoM2" label="Prezzo al m²" unit="€/m²" optional value={prices.piastrelleM2} max={10000} />
+    </div>
+  </details>
+
   <Fragment slot="result">
     <p class="result-title">Risultato</p>
     <dl class="kpis">
@@ -90,6 +108,10 @@ const faq = [
       <div class="kpi">
         <dt>Piastrelle necessarie</dt>
         <dd><span data-out="piastrelle">{p.text.piastrelle}</span><small>formato <span data-out="formato">{p.text.formato}</span></small></dd>
+      </div>
+      <div class="kpi kpi--cost" data-show="costo" hidden={!p.flags?.costo}>
+        <dt>Spesa stimata</dt>
+        <dd><span data-out="costo">{p.text.costo}</span><small>scatole acquistate × prezzo al m²</small></dd>
       </div>
     </dl>
     <dl class="details">
@@ -214,6 +236,7 @@ const faq = [
       latoB: v.latoB!,
       m2Scatola: v.m2Scatola!,
       scarto: v.scarto!,
+      prezzoM2: v.prezzoM2,
     }),
     compute: calcPiastrelle,
     present: presentPiastrelle,

@@ -2,7 +2,7 @@
  * Stima dei materiali per una parete o controparete in cartongesso.
  * Valori indicativi: i sistemi dei produttori possono prevedere quantità diverse.
  */
-import { fmt, int } from '../format.ts';
+import { euro, fmt, int } from '../format.ts';
 import { ceilSafe, withWaste, type CalcOutcome, type Presentation } from './utils.ts';
 
 /** Larghezza standard delle lastre (m). */
@@ -31,6 +31,21 @@ export interface CartongessoInput {
   /** Superficie di porte o aperture da escludere (m²). */
   aperture: number;
   scarto: number;
+  /** Prezzi facoltativi per la spesa stimata. */
+  prezzi?: CartongessoPrices | null;
+}
+
+export interface CartongessoPrices {
+  /** € per lastra */
+  lastra: number;
+  /** € per barra di guida da 3 m */
+  guida: number;
+  /** € per barra di montante da 3 m */
+  montante: number;
+  /** € per confezione da 100 viti */
+  viti100: number;
+  /** € per tassello */
+  tassello: number;
 }
 
 export interface CartongessoResult {
@@ -46,6 +61,9 @@ export interface CartongessoResult {
   tasselli: number;
   lastraPiuAltaDellaParete: boolean;
   lastraPiuBassaDellaParete: boolean;
+  /** Barre di montante da acquistare (più barre se la parete supera 3 m). */
+  montantiBarre: number;
+  costo: number | null;
 }
 
 export function calcCartongesso(i: CartongessoInput): CalcOutcome<CartongessoResult> {
@@ -65,6 +83,13 @@ export function calcCartongesso(i: CartongessoInput): CalcOutcome<CartongessoRes
   const montanti = ceilSafe(withWaste(montantiNetti, i.scarto));
   const vitiPerM2 = SCREWS_PER_M2_OUTER + (i.strati === 2 ? SCREWS_PER_M2_INNER : 0);
   const viti = Math.ceil(withWaste(areaParete * i.lati * vitiPerM2, i.scarto) / 10) * 10;
+  const guideBarre = ceilSafe(guideMetri / PROFILE_LENGTH);
+  const montantiBarre = montanti * ceilSafe(i.altezza / PROFILE_LENGTH);
+  const tasselli = ceilSafe((2 * i.lunghezza) / ANCHOR_SPACING) + 2;
+  const p = i.prezzi;
+  const costo = p
+    ? lastre * p.lastra + guideBarre * p.guida + montantiBarre * p.montante + Math.ceil(viti / 100) * p.viti100 + tasselli * p.tassello
+    : null;
 
   return {
     ok: true,
@@ -73,14 +98,16 @@ export function calcCartongesso(i: CartongessoInput): CalcOutcome<CartongessoRes
       areaRivestita: areaParete * i.lati * i.strati,
       lastre,
       guideMetri,
-      guideBarre: ceilSafe(guideMetri / PROFILE_LENGTH),
+      guideBarre,
       montanti,
       montantiMetri: montanti * i.altezza,
       montantiOltreBarra: i.altezza > PROFILE_LENGTH,
       viti,
-      tasselli: ceilSafe((2 * i.lunghezza) / ANCHOR_SPACING) + 2,
+      tasselli,
       lastraPiuAltaDellaParete: i.altezzaLastra > i.altezza + 1e-9,
       lastraPiuBassaDellaParete: i.altezza > i.altezzaLastra + 1e-9,
+      montantiBarre,
+      costo,
     },
   };
 }
@@ -99,11 +126,13 @@ export function presentCartongesso(i: CartongessoInput, r: CartongessoResult): P
       montanteAltezza: `${fmt(i.altezza, 2)} m`,
       viti: `circa ${int(r.viti)}`,
       tasselli: `circa ${int(r.tasselli)}`,
+      costo: r.costo !== null ? euro(r.costo) : '',
     },
     flags: {
       montantiOltreBarra: r.montantiOltreBarra,
       lastraPiuAlta: r.lastraPiuAltaDellaParete,
       lastraPiuBassa: r.lastraPiuBassaDellaParete,
+      costo: r.costo !== null,
     },
   };
 }
@@ -116,6 +145,9 @@ export function summaryCartongesso(i: CartongessoInput, r: CartongessoResult): s
     `Guide a U: ${fmt(r.guideMetri, 1)} m (${int(r.guideBarre)} barre da 3 m)`,
     `Montanti a C: ${int(r.montanti)} da ${fmt(i.altezza, 2)} m (${fmt(r.montantiMetri, 1)} m)`,
     `Viti per lastre: circa ${int(r.viti)} – tasselli per guide: circa ${int(r.tasselli)}`,
+    r.costo !== null ? `Spesa stimata materiali: ${euro(r.costo)}` : '',
     'Stima indicativa: verifica le quantità con il sistema del produttore.',
-  ].join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 }

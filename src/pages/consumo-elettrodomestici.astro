@@ -3,7 +3,10 @@ import CalculatorLayout from '../layouts/CalculatorLayout.astro';
 import Field from '../components/Field.astro';
 import AffiliateBox from '../components/AffiliateBox.astro';
 import { APPLIANCES, calcEnergia, presentEnergia, type EnergiaInput } from '../lib/calc/energia';
-import { ENERGY_PRICE_DEFAULT } from '../config/site';
+import { currentPrices } from '../lib/istat-data';
+
+const { prices, note: priceNote } = currentPrices();
+const ENERGY_PRICE_DEFAULT = prices.energiaKwh;
 import { euro, fmt } from '../lib/format';
 
 const preset = APPLIANCES.find((a) => a.id === 'condizionatore')!;
@@ -78,7 +81,7 @@ const faq = [
       value={fmt(ENERGY_PRICE_DEFAULT, 4)}
       positive
       max={5}
-      hint="Valore indicativo, inserisci quello della tua bolletta."
+      hint={`Valore indicativo, inserisci quello della tua bolletta. ${priceNote}`}
     />
     <Field
       id="standby"

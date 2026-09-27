@@ -231,3 +231,42 @@ test('istat: calcolo completo da indici, manuale e dati mancanti', async () => {
   assert.equal(p.flags?.bloccato, true);
   assert.match(p.text.nuovoCanone, /800,00/);
 });
+
+test('spesa stimata nei calcolatori', () => {
+  const pia = calcPiastrelle({ superficie: 20, latoA: 60, latoB: 60, m2Scatola: 1.44, scarto: 10, prezzoM2: 25 });
+  assert.ok(pia.ok);
+  close(pia.result.costo!, 16 * 1.44 * 25); // 576 €
+
+  const par = calcParquet({ superficie: 20, m2Confezione: 2.2, scarto: 8, perimetro: 18, porte: 0.8, prezzoM2: 35, prezzoBattiscopa: 4 });
+  assert.ok(par.ok);
+  close(par.result.costoParquet!, 10 * 2.2 * 35);
+  close(par.result.costoBattiscopa!, 8 * 2.4 * 4);
+  close(par.result.costo!, 770 + 76.8);
+
+  const car = calcCartongesso({
+    lunghezza: 4, altezza: 2.7, lati: 2, strati: 1, altezzaLastra: 3, interasse: 60, aperture: 0, scarto: 10,
+    prezzi: { lastra: 9, guida: 4, montante: 5, viti100: 4, tassello: 0.15 },
+  });
+  assert.ok(car.ok);
+  // 8 lastre, 3 guide, 9 montanti, 360 viti → 4 confezioni, 18 tasselli
+  close(car.result.costo!, 8 * 9 + 3 * 4 + 9 * 5 + 4 * 4 + 18 * 0.15);
+
+  const senzaPrezzo = calcPiastrelle({ superficie: 20, latoA: 60, latoB: 60, m2Scatola: 1.44, scarto: 10 });
+  assert.ok(senzaPrezzo.ok && senzaPrezzo.result.costo === null);
+});
+
+test('prezzi rivalutati con l’indice ISTAT', async () => {
+  const { revaluation, revalue, describeRevaluation } = await import('../src/lib/prices.ts');
+  const data = parseIstatData({ '2026-09': 100, '2027-03': 101.5 });
+  const r = revaluation(data, '2026-09');
+  close(r.factor, 1.015);
+  assert.equal(r.toMonth, '2027-03');
+  assert.deepEqual(revalue({ a: 10, b: { c: 2 } }, r.factor), { a: 10.15, b: { c: 2.03 } });
+  assert.match(describeRevaluation(r), /\+1,5%/);
+
+  const vuoto = revaluation(parseIstatData({}), '2026-09');
+  assert.equal(vuoto.factor, 1);
+  assert.match(describeRevaluation(vuoto), /appena sono disponibili/);
+  // Indice del mese base non ancora pubblicato
+  assert.equal(revaluation(parseIstatData({ '2026-08': 99 }), '2026-09').factor, 1);
+});

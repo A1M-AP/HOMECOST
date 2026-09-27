@@ -1785,3 +1785,246 @@ details.advanced[open] {
   color: var(--c-muted);
   font-size: 0.88rem;
 }
+
+/* ==========================================================================
+   Animazioni (disattivate con prefers-reduced-motion)
+   ========================================================================== */
+
+@keyframes hc-rise {
+  from {
+    opacity: 0.4;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hc-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes hc-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hc-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hc-flash {
+  from {
+    background-color: #fff3c4;
+  }
+
+  to {
+    background-color: transparent;
+  }
+}
+
+@keyframes hc-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  40% {
+    transform: scale(1.03);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes hc-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  40% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Ingresso dei titoli (solo spostamento, il testo è subito leggibile) */
+.hero > *,
+.page-head > * {
+  animation: hc-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.hero > :nth-child(2),
+.page-head > :nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+.hero > :nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+/* Comparsa allo scroll (classi aggiunte da src/scripts/motion.ts) */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.55s ease,
+    transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0s);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Schede dei calcolatori */
+.calc-tile:hover {
+  transform: translateY(-3px);
+}
+
+.tile-icon {
+  transition:
+    transform 0.25s ease,
+    background-color 0.25s ease,
+    color 0.25s ease;
+}
+
+.calc-tile:hover .tile-icon {
+  transform: rotate(-6deg) scale(1.08);
+  background: var(--c-primary);
+  color: #fff;
+}
+
+.calc-tile .more {
+  transition: letter-spacing 0.2s ease;
+}
+
+.calc-tile:hover .more {
+  letter-spacing: 0.02em;
+}
+
+.product {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.product:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+/* Logo */
+.logo:hover .logo-mark {
+  animation: hc-bounce 0.5s ease;
+}
+
+/* Pulsanti */
+.btn {
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    transform 0.1s ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* Risultati: il valore che cambia viene evidenziato */
+.kpi.is-updated {
+  animation: hc-pop 0.45s ease;
+}
+
+.details dd.is-updated,
+.combo .is-updated {
+  animation: hc-flash 0.8s ease-out;
+  border-radius: 4px;
+}
+
+.result.is-stale .result-stale-msg {
+  animation: hc-fade 0.2s ease;
+}
+
+.result-body {
+  transition:
+    opacity 0.2s ease,
+    filter 0.2s ease;
+}
+
+.copy-status:not(:empty) {
+  animation: hc-fade 0.25s ease;
+}
+
+/* Riquadro della spesa stimata */
+.kpi--cost {
+  grid-column: 1 / -1;
+  background: var(--c-accent-soft);
+  border-color: #f6cfae;
+}
+
+.kpi--cost dd {
+  color: var(--c-accent-dark);
+}
+
+/* Banner cookie, menu mobile, FAQ */
+.cookie-banner:not([hidden]) {
+  animation: hc-slide-up 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.site-nav.is-open {
+  animation: hc-drop 0.2s ease-out;
+}
+
+.faq details[open] .answer {
+  animation: hc-drop 0.25s ease-out;
+}
+
+.faq summary::after {
+  transition: transform 0.2s ease;
+}
+
+.faq details[open] summary::after {
+  transform: rotate(180deg);
+}
+
+details.advanced[open] > :not(summary) {
+  animation: hc-drop 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

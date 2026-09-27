@@ -3,6 +3,9 @@ import CalculatorLayout from '../layouts/CalculatorLayout.astro';
 import Field from '../components/Field.astro';
 import ProductBox from '../components/ProductBox.astro';
 import { calcParquet, estimatePerimeter, presentParquet, PARQUET_WASTE, type ParquetInput } from '../lib/calc/parquet';
+import { currentPrices } from '../lib/istat-data';
+
+const { prices, note: priceNote } = currentPrices();
 
 const superficie = 20;
 const defaults: ParquetInput = {
@@ -11,6 +14,8 @@ const defaults: ParquetInput = {
   scarto: PARQUET_WASTE.dritta,
   perimetro: estimatePerimeter(superficie),
   porte: 0.8,
+  prezzoM2: prices.parquetM2,
+  prezzoBattiscopa: prices.battiscopaM,
 };
 const outcome = calcParquet(defaults);
 if (!outcome.ok) throw new Error('Valori predefiniti non validi');
@@ -110,6 +115,15 @@ const faq = [
     </div>
   </fieldset>
 
+  <details class="advanced">
+    <summary>Prezzi e spesa stimata</summary>
+    <p class="hint">{priceNote} Inserisci i prezzi del prodotto che hai scelto.</p>
+    <div class="fields">
+      <Field id="prezzoM2" label="Parquet" unit="€/m²" optional value={prices.parquetM2} max={10000} />
+      <Field id="prezzoBattiscopa" label="Battiscopa" unit="€/m" optional value={prices.battiscopaM} max={1000} />
+    </div>
+  </details>
+
   <Fragment slot="result">
     <p class="result-title">Risultato</p>
     <dl class="kpis">
@@ -120,6 +134,10 @@ const faq = [
       <div class="kpi">
         <dt>Battiscopa</dt>
         <dd><span data-out="battiscopa">{p.text.battiscopa}</span><small data-out="barre">{p.text.barre}</small></dd>
+      </div>
+      <div class="kpi kpi--cost" data-show="costo" hidden={!p.flags?.costo}>
+        <dt>Spesa stimata</dt>
+        <dd><span data-out="costo">{p.text.costo}</span><small>parquet <span data-out="costoParquet">{p.text.costoParquet}</span> + battiscopa <span data-out="costoBattiscopa">{p.text.costoBattiscopa}</span></small></dd>
       </div>
     </dl>
     <dl class="details">
@@ -265,7 +283,15 @@ const faq = [
         perimetro = estimatePerimeter(superficie);
         perimetroStimato = true;
       }
-      return { superficie, m2Confezione: v.m2Confezione!, scarto: v.scarto!, perimetro, porte: v.porte ?? 0 };
+      return {
+        superficie,
+        m2Confezione: v.m2Confezione!,
+        scarto: v.scarto!,
+        perimetro,
+        porte: v.porte ?? 0,
+        prezzoM2: v.prezzoM2,
+        prezzoBattiscopa: v.prezzoBattiscopa,
+      };
     },
     compute: calcParquet,
     present: (i, r) => presentParquet(i, r, perimetroStimato),

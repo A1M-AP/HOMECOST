@@ -4,6 +4,9 @@ import Field from '../components/Field.astro';
 import ProductBox from '../components/ProductBox.astro';
 import { BOARD_HEIGHTS, calcCartongesso, presentCartongesso, type CartongessoInput } from '../lib/calc/cartongesso';
 import { fmt } from '../lib/format';
+import { currentPrices } from '../lib/istat-data';
+
+const { prices, note: priceNote } = currentPrices();
 
 const defaults: CartongessoInput = {
   lunghezza: 4,
@@ -14,6 +17,7 @@ const defaults: CartongessoInput = {
   interasse: 60,
   aperture: 0,
   scarto: 10,
+  prezzi: prices.cartongesso,
 };
 const outcome = calcCartongesso(defaults);
 if (!outcome.ok) throw new Error('Valori predefiniti non validi');
@@ -99,6 +103,18 @@ const faq = [
     </div>
   </fieldset>
 
+  <details class="advanced">
+    <summary>Prezzi e spesa stimata</summary>
+    <p class="hint">{priceNote} La spesa si calcola quando tutti i prezzi sono compilati.</p>
+    <div class="fields fields--3">
+      <Field id="pLastra" label="Lastra" unit="€/pz" optional value={prices.cartongesso.lastra} max={1000} />
+      <Field id="pGuida" label="Guida 3 m" unit="€/pz" optional value={prices.cartongesso.guida} max={1000} />
+      <Field id="pMontante" label="Montante 3 m" unit="€/pz" optional value={prices.cartongesso.montante} max={1000} />
+      <Field id="pViti" label="Viti (100 pz)" unit="€" optional value={prices.cartongesso.viti100} max={1000} />
+      <Field id="pTassello" label="Tassello" unit="€/pz" optional value={prices.cartongesso.tassello} max={100} />
+    </div>
+  </details>
+
   <Fragment slot="result">
     <p class="result-title">Stima dei materiali</p>
     <dl class="kpis">
@@ -109,6 +125,10 @@ const faq = [
       <div class="kpi">
         <dt>Montanti a C</dt>
         <dd><span data-out="montanti">{p.text.montanti}</span><small>da <span data-out="montanteAltezza">{p.text.montanteAltezza}</span></small></dd>
+      </div>
+      <div class="kpi kpi--cost" data-show="costo" hidden={!p.flags?.costo}>
+        <dt>Spesa stimata materiali</dt>
+        <dd><span data-out="costo">{p.text.costo}</span><small>lastre, profili, viti e tasselli</small></dd>
       </div>
     </dl>
     <dl class="details">
@@ -256,6 +276,10 @@ const faq = [
       interasse: v.interasse!,
       aperture: v.aperture ?? 0,
       scarto: v.scarto!,
+      prezzi:
+        [v.pLastra, v.pGuida, v.pMontante, v.pViti, v.pTassello].every((x) => x !== null)
+          ? { lastra: v.pLastra!, guida: v.pGuida!, montante: v.pMontante!, viti100: v.pViti!, tassello: v.pTassello! }
+          : null,
     }),
     compute: calcCartongesso,
     present: presentCartongesso,

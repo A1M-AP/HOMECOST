@@ -19,13 +19,6 @@ export const SITE = {
 } as const;
 
 /**
- * Prezzo indicativo dell'energia elettrica (€/kWh, tutto compreso: materia prima,
- * trasporto, oneri e imposte) proposto nel calcolatore dei consumi.
- * È solo un punto di partenza: l'utente è invitato a inserire quello della sua bolletta.
- */
-export const ENERGY_PRICE_DEFAULT = 0.28;
-
-/**
  * Statistiche. Lascia vuoto per non caricare nulla.
  * Lo script viene caricato solo dopo il consenso alla categoria "statistiche".
  */
