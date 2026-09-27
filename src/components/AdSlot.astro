@@ -1,0 +1,23 @@
+---
+/**
+ * Spazio pubblicitario con dimensioni fisse (CLS zero).
+ * L'annuncio viene inserito da src/scripts/consent.ts solo dopo il consenso.
+ */
+import { ADS } from '../config/site';
+
+interface Props {
+  placement: 'result' | 'sidebar';
+}
+const { placement } = Astro.props;
+const label = placement === 'sidebar' ? 'Pubblicità laterale' : 'Pubblicità sotto il risultato';
+---
+{
+  ADS.enabled && (
+    <aside class={`ad-slot ad-slot--${placement}`} data-ad-placement={placement} aria-label={label}>
+      <span class="ad-label">Pubblicità</span>
+      <div class="ad-inner">
+        <span class="ad-placeholder">Spazio pubblicitario</span>
+      </div>
+    </aside>
+  )
+}

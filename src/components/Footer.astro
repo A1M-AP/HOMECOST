@@ -1,0 +1,42 @@
+---
+import Logo from './Logo.astro';
+import { CALCULATORS, INFO_PAGES, LEGAL_PAGES } from '../config/calculators';
+import { AMAZON_DISCLOSURE } from '../config/affiliates';
+import { SITE } from '../config/site';
+
+const year = new Date().getFullYear();
+---
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      <a href="/" class="logo" aria-label="HomeCost, vai alla homepage"><Logo /></a>
+      <p>Calcolatori gratuiti e senza registrazione per spendere meglio in casa. Tutti i calcoli avvengono nel tuo browser.</p>
+    </div>
+    <nav aria-labelledby="footer-calc">
+      <p class="footer-title" id="footer-calc">Calcolatori</p>
+      <ul class="footer-links">
+        {CALCULATORS.map((c) => <li><a href={c.path}>{c.navLabel === 'Consumi' ? 'Consumi elettrodomestici' : c.navLabel}</a></li>)}
+      </ul>
+    </nav>
+    <nav aria-labelledby="footer-info">
+      <p class="footer-title" id="footer-info">HomeCost</p>
+      <ul class="footer-links">
+        {INFO_PAGES.map((p) => <li><a href={p.path}>{p.name}</a></li>)}
+      </ul>
+    </nav>
+    <nav aria-labelledby="footer-legal">
+      <p class="footer-title" id="footer-legal">Informazioni legali</p>
+      <ul class="footer-links">
+        {LEGAL_PAGES.map((p) => <li><a href={p.path}>{p.name}</a></li>)}
+        <li><button type="button" data-consent-open>Preferenze cookie</button></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="container footer-bottom">
+    <p>
+      I risultati dei calcolatori sono stime indicative e non sostituiscono il parere di un professionista.
+      Alcuni link sono affiliati. {AMAZON_DISCLOSURE}
+    </p>
+    <p>© {year} {SITE.name} – {SITE.url.replace('https://', '')}</p>
+  </div>
+</footer>

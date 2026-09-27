@@ -1,0 +1,56 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import { SITE } from '../config/site';
+import { AFFILIATE_DISCLOSURE, AMAZON_DISCLOSURE } from '../config/affiliates';
+---
+<PageLayout
+  title="Note legali | HomeCost"
+  description="Note legali di HomeCost: titolare del sito, limitazioni di responsabilità sui calcoli, link di affiliazione e proprietà intellettuale."
+  h1="Note legali"
+  updated="[DA COMPLETARE]"
+>
+  <p class="placeholder-note">
+    <strong>Testo segnaposto.</strong> Completa i dati del titolare e verifica il testo prima della pubblicazione.
+  </p>
+
+  <h2>Titolare del sito</h2>
+  <p>
+    {SITE.url.replace('https://', '')} è gestito da [NOME E COGNOME / RAGIONE SOCIALE], [INDIRIZZO], [P. IVA], e-mail
+    <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
+  </p>
+
+  <h2>Natura dei calcoli</h2>
+  <p>
+    I calcolatori di HomeCost forniscono <strong>stime indicative</strong> a scopo informativo, basate sui valori inseriti
+    dall’utente e su parametri medi. I risultati non costituiscono consulenza tecnica, legale, fiscale o finanziaria e non
+    sostituiscono il parere di un professionista. Prima di acquistare materiali, eseguire lavori o inviare comunicazioni
+    con valore legale verifica sempre i dati con un tecnico, con il produttore o con un consulente.
+  </p>
+  <p>
+    Pur impegnandoci a mantenere formule e dati corretti e aggiornati (inclusi gli indici ISTAT, aggiornati manualmente),
+    non possiamo garantirne l’assenza di errori. Nei limiti consentiti dalla legge, HomeCost non risponde di danni
+    derivanti dall’uso dei risultati.
+  </p>
+
+  <h2>Pubblicità e link di affiliazione</h2>
+  <p>{AFFILIATE_DISCLOSURE} {AMAZON_DISCLOSURE}</p>
+  <p>
+    I link affiliati sono contrassegnati e usano l’attributo <code>rel="sponsored"</code>. La presenza di un prodotto o di
+    un servizio non costituisce garanzia sulla sua qualità: valuta sempre le condizioni dell’offerta sul sito del partner.
+  </p>
+
+  <h2>Proprietà intellettuale</h2>
+  <p>
+    Testi, grafica, logo e codice del sito sono di proprietà del titolare, salvo diversa indicazione. È vietata la
+    riproduzione senza autorizzazione, fatta salva la citazione con link alla pagina originale.
+  </p>
+
+  <h2>Link esterni</h2>
+  <p>
+    Il sito contiene link a siti di terze parti, sui quali HomeCost non ha alcun controllo e dei cui contenuti non è
+    responsabile.
+  </p>
+
+  <h2>Legge applicabile</h2>
+  <p>Queste note sono regolate dalla legge italiana.</p>
+</PageLayout>

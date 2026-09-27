@@ -1,0 +1,40 @@
+---
+/**
+ * Domande frequenti con markup schema.org FAQPage.
+ * Le risposte possono contenere HTML semplice (<a>, <strong>, <ul>).
+ */
+export interface FaqItem {
+  q: string;
+  a: string;
+}
+interface Props {
+  items: FaqItem[];
+  title?: string;
+}
+const { items, title = 'Domande frequenti' } = Astro.props;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: items.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: { '@type': 'Answer', text: item.a },
+  })),
+};
+const json = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
+---
+<section class="faq" aria-labelledby="faq-title">
+  <h2 id="faq-title">{title}</h2>
+  {
+    items.map((item) => (
+      <details>
+        <summary>{item.q}</summary>
+        <div class="answer">
+          <p set:html={item.a} />
+        </div>
+      </details>
+    ))
+  }
+  <script type="application/ld+json" set:html={json} />
+</section>

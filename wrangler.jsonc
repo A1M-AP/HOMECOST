@@ -1,0 +1,19 @@
+// Configurazione per Cloudflare Workers (Workers Builds / `npx wrangler deploy`).
+// Il sito è solo statico: Cloudflare serve i file della cartella dist/ generata da `npm run build`.
+// Il nome deve coincidere con quello del Worker creato nella dashboard Cloudflare.
+{
+  "name": "homecost",
+  "compatibility_date": "2026-09-01",
+  "build": {
+    // Eseguito da `wrangler deploy` prima della pubblicazione: dist/ esiste anche
+    // se nella dashboard il comando di build è vuoto.
+    "command": "npm run build"
+  },
+  "assets": {
+    "directory": "./dist",
+    // Gli URL delle pagine terminano con "/" (es. /calcolo-pittura/)
+    "html_handling": "auto-trailing-slash",
+    // Per gli indirizzi inesistenti viene mostrata dist/404.html
+    "not_found_handling": "404-page"
+  }
+}

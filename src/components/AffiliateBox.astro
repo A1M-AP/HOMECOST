@@ -1,0 +1,30 @@
+---
+/**
+ * Box di affiliazione: testi e URL arrivano da src/config/affiliates.ts.
+ * <AffiliateBox id="energia" />
+ */
+import Icon from './Icon.astro';
+import AffiliateDisclosure from './AffiliateDisclosure.astro';
+import { AFFILIATE_BOXES, type AffiliateBoxId } from '../config/affiliates';
+
+interface Props {
+  id: AffiliateBoxId;
+}
+const box = AFFILIATE_BOXES[Astro.props.id];
+const headingId = `aff-${Astro.props.id}`;
+---
+{
+  box.enabled && (
+    <section class="affiliate-box" aria-labelledby={headingId}>
+      <h2 id={headingId}>{box.title}</h2>
+      <p>{box.text}</p>
+      <a class="btn btn-accent" href={box.url} rel="sponsored nofollow noopener" target="_blank">
+        {box.cta}
+        <Icon name="external" />
+        <span class="sr-only">(si apre in una nuova scheda)</span>
+      </a>
+      {box.note && <p class="affiliate-note">{box.note}</p>}
+      <AffiliateDisclosure />
+    </section>
+  )
+}

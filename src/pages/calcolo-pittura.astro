@@ -1,0 +1,271 @@
+---
+import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Field from '../components/Field.astro';
+import ProductBox from '../components/ProductBox.astro';
+import { calcPittura, presentPittura, type PitturaInput } from '../lib/calc/pittura';
+
+const defaults: PitturaInput = {
+  lunghezza: 4,
+  larghezza: 3.5,
+  altezza: 2.7,
+  porteN: 1,
+  porteLarghezza: 0.8,
+  porteAltezza: 2.1,
+  finestreN: 1,
+  finestreLarghezza: 1.2,
+  finestreAltezza: 1.4,
+  soffitto: true,
+  mani: 2,
+  resa: 10,
+  scarto: 10,
+};
+const outcome = calcPittura(defaults);
+if (!outcome.ok) throw new Error('Valori predefiniti non validi');
+const p = presentPittura(defaults, outcome.result);
+
+const faq = [
+  {
+    q: 'Quanti litri di pittura servono per una stanza di 20 m²?',
+    a: 'Per una stanza di 20 m² di pavimento (per esempio 5 × 4 m) con pareti alte 2,70 m, la superficie da pitturare è di circa 45 m² di pareti più 20 m² di soffitto. Con due mani e una resa di 10 m²/litro servono circa 13 litri, che diventano 14–15 litri con il 10% di scarto: in pratica un barattolo da 10 L e uno da 5 L.',
+  },
+  {
+    q: 'Quante mani di pittura bisogna dare?',
+    a: 'Di norma due mani: la prima uniforma il fondo, la seconda dà il colore pieno. Può bastarne una sola se ripassi lo stesso colore su una parete in buono stato; ne servono tre quando copri un colore scuro con uno chiaro o usi tinte molto intense.',
+  },
+  {
+    q: 'Che cosa significa la resa della pittura?',
+    a: 'È la superficie che puoi coprire con un litro di prodotto per una mano, indicata sulla confezione in m²/litro (per esempio 10–12 m²/L). È un valore teorico: su intonaci assorbenti, ruvidi o nuovi la resa reale è più bassa, per questo conviene usare il valore minimo indicato dal produttore.',
+  },
+  {
+    q: 'Devo togliere porte e finestre dal calcolo?',
+    a: 'Sì, per aperture di dimensioni normali conviene sottrarle: il calcolatore lo fa in automatico. Alcuni imbianchini non le sottraggono quando sono piccole, per avere un margine in più; con lo scarto del 10% ottieni lo stesso risultato in modo più preciso.',
+  },
+  {
+    q: 'Serve il fissativo prima di pitturare?',
+    a: 'Sì su intonaci nuovi, cartongesso, pareti stuccate o che “spolverano”: il fissativo (o primer) uniforma l’assorbimento del fondo, migliora l’aderenza e fa rendere di più la pittura. Si acquista a parte e si diluisce secondo le indicazioni riportate sulla confezione.',
+  },
+  {
+    q: 'Conviene comprare un barattolo grande o più barattoli piccoli?',
+    a: 'Il prezzo al litro dei formati grandi è quasi sempre più basso, quindi conviene la combinazione che copre il fabbisogno con meno pittura avanzata e meno barattoli. Se inserisci i prezzi dei tre formati nelle opzioni avanzate, il calcolatore sceglie la combinazione più economica.',
+  },
+];
+---
+<CalculatorLayout
+  calc="pittura"
+  title="Calcolo pittura pareti: quanti litri servono? | HomeCost"
+  description="Calcola quanta pittura serve per imbiancare una stanza: superficie di pareti e soffitto, litri necessari e barattoli da 2,5, 5 e 10 litri da comprare."
+  h1="Calcolo pittura: quanti litri servono per la tua stanza"
+  lead="Inserisci le misure della stanza, porte e finestre: calcoliamo superficie, litri di pittura e barattoli da acquistare."
+  faq={faq}
+  copyTitle="Calcolo pittura"
+>
+  <p class="subgroup-title">Misure della stanza</p>
+  <div class="fields fields--row3">
+    <Field id="lunghezza" label="Lunghezza" unit="m" value={defaults.lunghezza} positive max={100} />
+    <Field id="larghezza" label="Larghezza" unit="m" value={defaults.larghezza} positive max={100} />
+    <Field id="altezza" label="Altezza" unit="m" value={defaults.altezza} positive max={10} />
+  </div>
+
+  <fieldset class="form-group">
+    <legend>Porte</legend>
+    <div class="fields fields--row3">
+      <Field id="porteN" label="Numero" value={defaults.porteN} integer max={30} />
+      <Field id="porteLarghezza" label="Larghezza" unit="m" value={defaults.porteLarghezza} positive max={10} />
+      <Field id="porteAltezza" label="Altezza" unit="m" value={defaults.porteAltezza} positive max={10} />
+    </div>
+  </fieldset>
+
+  <fieldset class="form-group">
+    <legend>Finestre</legend>
+    <div class="fields fields--row3">
+      <Field id="finestreN" label="Numero" value={defaults.finestreN} integer max={30} />
+      <Field id="finestreLarghezza" label="Larghezza" unit="m" value={defaults.finestreLarghezza} positive max={10} />
+      <Field id="finestreAltezza" label="Altezza" unit="m" value={defaults.finestreAltezza} positive max={10} />
+    </div>
+  </fieldset>
+
+  <fieldset class="form-group">
+    <legend>Pittura</legend>
+    <label class="check">
+      <input type="checkbox" name="soffitto" checked={defaults.soffitto} />
+      <span>Pitturo anche il soffitto</span>
+    </label>
+    <div class="fields fields--row3" style="margin-top:14px">
+      <Field id="mani" label="Mani" value={defaults.mani} positive integer max={5} />
+      <Field id="resa" label="Resa" unit="m²/L" value={defaults.resa} positive max={40} />
+      <Field id="scarto" label="Scarto" unit="%" value={defaults.scarto} max={50} />
+    </div>
+    <p class="hint" style="margin:6px 0 0">La resa per una mano è indicata sulla confezione: usa il valore più basso.</p>
+  </fieldset>
+
+  <details class="advanced">
+    <summary>Opzioni avanzate: prezzi dei barattoli</summary>
+    <p class="hint">Facoltativo: con i prezzi dei tre formati calcoliamo la combinazione più economica.</p>
+    <div class="fields fields--row3">
+      <Field id="p25" label="2,5 L" unit="€" optional />
+      <Field id="p5" label="5 L" unit="€" optional />
+      <Field id="p10" label="10 L" unit="€" optional />
+    </div>
+  </details>
+
+  <Fragment slot="result">
+    <p class="result-title">Risultato</p>
+    <dl class="kpis">
+      <div class="kpi kpi--main">
+        <dt>Pittura necessaria</dt>
+        <dd><span data-out="litri">{p.text.litri}</span><small>scarto incluso</small></dd>
+      </div>
+      <div class="kpi">
+        <dt>Superficie da pitturare</dt>
+        <dd><span data-out="superficie">{p.text.superficie}</span><small data-out="mani">{p.text.mani}</small></dd>
+      </div>
+    </dl>
+    <dl class="details">
+      <div><dt>Pareti al netto delle aperture</dt><dd data-out="pareti">{p.text.pareti}</dd></div>
+      <div data-show="soffitto" hidden={!p.flags?.soffitto}><dt>Soffitto</dt><dd data-out="soffitto">{p.text.soffitto}</dd></div>
+      <div data-show="aperture" hidden={!p.flags?.aperture}><dt>Porte e finestre escluse</dt><dd data-out="aperture">{p.text.aperture}</dd></div>
+      <div><dt>Litri senza scarto</dt><dd data-out="litriNetti">{p.text.litriNetti}</dd></div>
+      <div><dt>Solo da 2,5 L</dt><dd data-out="can25">{p.text.can25}</dd></div>
+      <div><dt>Solo da 5 L</dt><dd data-out="can5">{p.text.can5}</dd></div>
+      <div><dt>Solo da 10 L</dt><dd data-out="can10">{p.text.can10}</dd></div>
+    </dl>
+    <div class="combo">
+      <p><small>Combinazione consigliata</small></p>
+      <p class="combo-main" data-out="combo">{p.text.combo}</p>
+      <p><small><span data-out="comboLitri">{p.text.comboLitri}</span><span data-show="prezzi" hidden> – costo <span data-out="comboCosto">{p.text.comboCosto}</span></span></small></p>
+      <p><small>Criterio: <span data-out="criterio">{p.text.criterio}</span>.</small></p>
+    </div>
+  </Fragment>
+
+  <Fragment slot="after-result">
+    <ProductBox group="pittura" />
+  </Fragment>
+
+  <Fragment slot="content">
+    <h2>Come si calcola la pittura necessaria</h2>
+    <p>
+      Per sapere quanta pittura comprare bisogna prima calcolare la <strong>superficie da pitturare</strong>, poi
+      moltiplicarla per il <strong>numero di mani</strong> e dividerla per la <strong>resa</strong> del prodotto, cioè
+      i metri quadrati che copre un litro per una mano. Infine si aggiunge un margine di scarto per assorbimento del
+      fondo, ritocchi e pittura che resta nel rullo e nella vaschetta.
+    </p>
+    <p class="formula">
+      pareti = 2 × (lunghezza + larghezza) × altezza − porte − finestre<br />
+      superficie = pareti + soffitto (se incluso)<br />
+      litri = superficie × mani ÷ resa × (1 + scarto %)
+    </p>
+    <p>
+      Porte e finestre si sottraggono moltiplicando larghezza per altezza di ciascuna apertura. Il soffitto, se lo
+      pitturi, ha la stessa superficie del pavimento: lunghezza × larghezza. Il calcolatore poi confronta i formati
+      in commercio (2,5, 5 e 10 litri) e ti propone la combinazione con meno pittura avanzata.
+    </p>
+
+    <h3>Quale resa inserire</h3>
+    <p>
+      Le idropitture per interni dichiarano di solito una resa tra 8 e 14 m² per litro per mano. È un valore misurato
+      su superfici lisce e già trattate: su intonaci nuovi, pareti ruvide o molto assorbenti la resa reale scende.
+      Per stare tranquillo usa il valore più basso indicato sulla confezione e, se il fondo è nuovo, applica prima
+      un fissativo. Le pitture lavabili di qualità hanno spesso una resa più alta perché coprono meglio.
+    </p>
+
+    <h2>Esempio pratico passo passo</h2>
+    <p>
+      Una camera da letto misura 4 × 3,5 metri ed è alta 2,70 m. Ha una porta da 0,80 × 2,10 m e una finestra da
+      1,20 × 1,40 m. Vuoi pitturare anche il soffitto con due mani di un’idropittura che rende 10 m²/L.
+    </p>
+    <ol class="steps">
+      <li><strong>Pareti lorde:</strong> 2 × (4 + 3,5) × 2,70 = 40,5 m².</li>
+      <li><strong>Aperture:</strong> porta 0,80 × 2,10 = 1,68 m²; finestra 1,20 × 1,40 = 1,68 m²; totale 3,36 m².</li>
+      <li><strong>Pareti nette:</strong> 40,5 − 3,36 = 37,14 m².</li>
+      <li><strong>Soffitto:</strong> 4 × 3,5 = 14 m². Superficie totale: 51,14 m².</li>
+      <li><strong>Litri senza scarto:</strong> 51,14 × 2 ÷ 10 = 10,23 litri.</li>
+      <li><strong>Con il 10% di scarto:</strong> 10,23 × 1,10 = circa 11,3 litri.</li>
+      <li><strong>Barattoli:</strong> la soluzione più efficiente è 1 barattolo da 10 L + 1 da 2,5 L (12,5 litri).</li>
+    </ol>
+    <p>
+      La pittura che avanza non è sprecata: conservala ben chiusa per i ritocchi futuri, soprattutto se è una tinta
+      fatta a macchina, difficile da riprodurre identica.
+    </p>
+
+    <h3>Casi particolari</h3>
+    <ul>
+      <li>
+        <strong>Da colore scuro a colore chiaro:</strong> conta tre mani, oppure una mano di fondo bianco coprente più
+        due mani del colore finale.
+      </li>
+      <li>
+        <strong>Pareti nuove o in cartongesso:</strong> prima della pittura serve una mano di fissativo, che si calcola a
+        parte in base alla sua resa (spesso più alta di quella della pittura).
+      </li>
+      <li>
+        <strong>Muffa e macchie:</strong> vanno trattate prima con un prodotto specifico; nei bagni e nelle cucine usa una
+        pittura antimuffa o traspirante.
+      </li>
+      <li>
+        <strong>Soffitti:</strong> sono più faticosi da pitturare e spesso si usa una pittura diversa da quella delle
+        pareti: se è così, calcola le due superfici separatamente, lanciando il calcolo con e senza soffitto.
+      </li>
+    </ul>
+
+    <h2>Errori comuni da evitare</h2>
+    <ul>
+      <li>
+        <strong>Calcolare la superficie del pavimento invece di quella delle pareti.</strong> In una stanza normale le
+        pareti misurano circa 2,5–3 volte il pavimento.
+      </li>
+      <li>
+        <strong>Fidarsi della resa massima.</strong> I valori “fino a 14 m²/L” valgono in condizioni ideali: sui fondi
+        reali si rischia di restare senza pittura a metà lavoro.
+      </li>
+      <li>
+        <strong>Contare una sola mano.</strong> Quasi sempre ne servono due, e tre per coprire colori scuri.
+      </li>
+      <li>
+        <strong>Diluire più del consentito per “allungare” la pittura.</strong> Si riduce la copertura e servono più
+        mani: rispetta la diluizione indicata dal produttore.
+      </li>
+      <li>
+        <strong>Comprare tinte colorate in più volte.</strong> Due lotti preparati in giorni diversi possono avere
+        sfumature leggermente diverse: meglio acquistare subito tutta la quantità necessaria.
+      </li>
+      <li>
+        <strong>Dimenticare il fissativo.</strong> Su intonaci nuovi e cartongesso senza fissativo la pittura viene
+        assorbita in modo irregolare e se ne consuma molta di più.
+      </li>
+    </ul>
+    <p>
+      Se devi anche realizzare nuove pareti o contropareti, calcola prima i materiali con il
+      <a href="/calcolo-cartongesso/">calcolatore del cartongesso</a>; per il pavimento usa il
+      <a href="/calcolo-parquet/">calcolo del parquet</a> o quello delle <a href="/calcolo-piastrelle/">piastrelle</a>.
+    </p>
+  </Fragment>
+</CalculatorLayout>
+
+<script>
+  import { initCalculator, isChecked } from '../scripts/calc-engine.ts';
+  import { calcPittura, presentPittura, summaryPittura } from '../lib/calc/pittura.ts';
+  import { fmt } from '../lib/format.ts';
+
+  initCalculator({
+    read: (v, form) => ({
+      lunghezza: v.lunghezza!,
+      larghezza: v.larghezza!,
+      altezza: v.altezza!,
+      porteN: v.porteN!,
+      porteLarghezza: v.porteLarghezza!,
+      porteAltezza: v.porteAltezza!,
+      finestreN: v.finestreN!,
+      finestreLarghezza: v.finestreLarghezza!,
+      finestreAltezza: v.finestreAltezza!,
+      soffitto: isChecked(form, 'soffitto'),
+      mani: v.mani!,
+      resa: v.resa!,
+      scarto: v.scarto!,
+      prezzi: { 2.5: v.p25 ?? undefined, 5: v.p5 ?? undefined, 10: v.p10 ?? undefined },
+    }),
+    compute: calcPittura,
+    present: presentPittura,
+    summary: summaryPittura,
+    announce: (_i, r) => `Servono circa ${fmt(r.litri, 1)} litri di pittura per ${fmt(r.superficie, 1)} metri quadrati.`,
+  });
+</script>

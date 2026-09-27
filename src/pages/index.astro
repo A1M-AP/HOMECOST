@@ -1,0 +1,93 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CalcTile from '../components/CalcTile.astro';
+import Icon from '../components/Icon.astro';
+import { CALCULATORS } from '../config/calculators';
+import { SITE } from '../config/site';
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE.name,
+    url: `${SITE.url}/`,
+    description: SITE.description,
+    inLanguage: 'it-IT',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: SITE.name,
+    url: `${SITE.url}/`,
+    logo: `${SITE.url}/apple-touch-icon.png`,
+    email: SITE.email,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Calcolatori HomeCost',
+    itemListElement: CALCULATORS.map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: c.name,
+      url: `${SITE.url}${c.path}`,
+    })),
+  },
+];
+---
+<BaseLayout
+  title="HomeCost – Calcolatori gratuiti per casa ed energia"
+  description="Calcolatori gratuiti e senza registrazione per casa ed energia: costo in bolletta degli elettrodomestici, pittura, piastrelle, cartongesso, parquet e aggiornamento ISTAT dell’affitto."
+  jsonLd={jsonLd}
+>
+  <section class="container hero">
+    <h1>Calcolatori gratuiti per casa ed energia</h1>
+    <p class="lead">
+      Scopri quanto ti costa davvero un elettrodomestico, quanta pittura o quante piastrelle comprare e di quanto
+      aggiornare l’affitto. Risultati immediati, spiegati in modo semplice.
+    </p>
+    <ul class="hero-badges">
+      <li><Icon name="gift" /> Gratis</li>
+      <li><Icon name="check" /> Senza registrazione</li>
+      <li><Icon name="lock" /> Calcoli nel tuo browser</li>
+    </ul>
+  </section>
+
+  <section class="container section" aria-labelledby="calc-title" style="padding-top:16px">
+    <h2 id="calc-title" class="sr-only">Tutti i calcolatori</h2>
+    <ul class="calc-grid">
+      {CALCULATORS.map((c) => <li><CalcTile calc={c} headingLevel="h3" /></li>)}
+    </ul>
+  </section>
+
+  <section class="container section" aria-labelledby="why-title">
+    <h2 id="why-title">Perché usare HomeCost</h2>
+    <ul class="features">
+      <li>
+        <h3>Numeri chiari, subito</h3>
+        <p>Il risultato si aggiorna mentre scrivi, con tutti i passaggi del calcolo e le formule spiegate sotto ogni strumento.</p>
+      </li>
+      <li>
+        <h3>Pensato per l’Italia</h3>
+        <p>Prezzi in euro, formati dei materiali in commercio, indice ISTAT FOI e le regole dei contratti di affitto italiani.</p>
+      </li>
+      <li>
+        <h3>I tuoi dati restano tuoi</h3>
+        <p>Nessun account e nessun invio al server: tutti i calcoli avvengono direttamente nel tuo dispositivo.</p>
+      </li>
+    </ul>
+  </section>
+
+  <section class="container section prose" aria-labelledby="how-title" style="margin-top:0">
+    <h2 id="how-title">Come funzionano i calcolatori</h2>
+    <p>
+      Ogni strumento parte da valori di esempio già compilati, così vedi subito come funziona. Sostituiscili con le tue
+      misure o con i dati della tua bolletta: il risultato si aggiorna in tempo reale. Con i pulsanti “Copia risultato” e
+      “Stampa” puoi salvare il calcolo o portarlo in negozio.
+    </p>
+    <p>
+      I risultati sono stime indicative: le quantità reali dipendono dai prodotti scelti, dalle condizioni della casa e
+      da come viene eseguito il lavoro. Per interventi importanti chiedi sempre il parere di un professionista.
+    </p>
+  </section>
+</BaseLayout>

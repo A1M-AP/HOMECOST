@@ -1,0 +1,291 @@
+---
+import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Field from '../components/Field.astro';
+import ProductBox from '../components/ProductBox.astro';
+import { calcParquet, estimatePerimeter, presentParquet, PARQUET_WASTE, type ParquetInput } from '../lib/calc/parquet';
+
+const superficie = 20;
+const defaults: ParquetInput = {
+  superficie,
+  m2Confezione: 1.9,
+  scarto: PARQUET_WASTE.dritta,
+  perimetro: estimatePerimeter(superficie),
+  porte: 0.8,
+};
+const outcome = calcParquet(defaults);
+if (!outcome.ok) throw new Error('Valori predefiniti non validi');
+const p = presentParquet(defaults, outcome.result, true);
+
+const faq = [
+  {
+    q: 'Quanto scarto devo calcolare per il parquet?',
+    a: 'Indicativamente il 5–8% per la posa dritta, il 10–15% per la posa diagonale e almeno il 15% per la spina di pesce, che richiede molti tagli. In stanze irregolari, con nicchie o colonne, conviene scegliere il valore più alto dell’intervallo.',
+  },
+  {
+    q: 'Quanti metri quadrati ci sono in una confezione di parquet?',
+    a: 'Dipende dal formato delle doghe: di solito tra 1,5 e 2,5 m² per confezione. Il dato è sempre riportato sull’etichetta o nella scheda prodotto, ed è quello da inserire nel calcolatore: non calcolarlo moltiplicando le misure delle doghe, perché gli incastri riducono la superficie utile.',
+  },
+  {
+    q: 'Come si calcolano i metri di battiscopa?',
+    a: 'Misura il perimetro della stanza, sottrai la larghezza delle porte e aggiungi circa il 10% per i tagli agli angoli. Se inserisci solo la superficie, il calcolatore stima il perimetro come se la stanza fosse quadrata; per un risultato preciso inserisci lunghezza e larghezza oppure il perimetro reale.',
+  },
+  {
+    q: 'Il parquet va acclimatato prima della posa?',
+    a: 'Sì: la maggior parte dei produttori consiglia di lasciare le confezioni chiuse nella stanza di posa per almeno 48 ore, così il legno si adatta a temperatura e umidità dell’ambiente. Controlla anche che il sottofondo sia asciutto: l’umidità del massetto è una delle prime cause di problemi.',
+  },
+  {
+    q: 'Posa flottante o incollata: cambia la quantità di parquet?',
+    a: 'No, la quantità di parquet è la stessa. Cambiano i materiali accessori: per la posa flottante serve un materassino sottopavimento (circa la stessa superficie del pavimento più le sovrapposizioni), per quella incollata un adesivo specifico secondo la resa indicata dal produttore.',
+  },
+  {
+    q: 'Perché bisogna lasciare uno spazio lungo le pareti?',
+    a: 'Il legno si dilata e si ritira con l’umidità. Per questo lungo tutto il perimetro si lascia un giunto di dilatazione, di solito di 8–10 mm, che viene poi coperto dal battiscopa. Senza questo spazio il pavimento può sollevarsi o fare rumore.',
+  },
+];
+---
+<CalculatorLayout
+  calc="parquet"
+  title="Calcolo parquet: quante confezioni servono? | HomeCost"
+  description="Calcola quante confezioni di parquet comprare in base a superficie e tipo di posa (dritta, diagonale, spina di pesce) e quanti metri di battiscopa servono."
+  h1="Calcolo parquet: confezioni e battiscopa necessari"
+  lead="Inserisci la superficie, i m² per confezione e il tipo di posa: ottieni le confezioni da acquistare e i metri di battiscopa."
+  faq={faq}
+  copyTitle="Calcolo parquet"
+>
+  <fieldset class="choices" style="margin-bottom:14px">
+    <legend class="sr-only">Come vuoi indicare la superficie?</legend>
+    <label class="choice"><input type="radio" name="modo" value="m2" checked /><span>Superficie in m²</span></label>
+    <label class="choice"><input type="radio" name="modo" value="misure" /><span>Lunghezza × larghezza</span></label>
+  </fieldset>
+
+  <div class="fields" data-mode="m2">
+    <Field id="superficie" label="Superficie" unit="m²" value={superficie} positive max={10000} />
+    <Field
+      id="perimetro"
+      label="Perimetro"
+      unit="m"
+      optional
+      max={2000}
+      placeholder="stimato"
+      hint="Facoltativo: se vuoto lo stimiamo."
+    />
+  </div>
+  <div class="fields" data-mode="misure" hidden>
+    <Field id="lunghezza" label="Lunghezza" unit="m" value={5} positive max={200} />
+    <Field id="larghezza" label="Larghezza" unit="m" value={4} positive max={200} />
+  </div>
+
+  <fieldset class="form-group">
+    <legend>Tipo di posa</legend>
+    <div class="choices">
+      <label class="choice"><input type="radio" name="posa" value="dritta" checked /><span>Dritta</span></label>
+      <label class="choice"><input type="radio" name="posa" value="diagonale" /><span>Diagonale</span></label>
+      <label class="choice"><input type="radio" name="posa" value="spina" /><span>Spina di pesce</span></label>
+    </div>
+    <div class="fields" style="margin-top:14px">
+      <Field
+        id="scarto"
+        label="Scarto"
+        unit="%"
+        value={defaults.scarto}
+        max={60}
+        hint="Dritta 5–8%, diagonale 10–15%, spina di pesce 15%."
+      />
+      <Field id="m2Confezione" label="m²/confezione" unit="m²" value={defaults.m2Confezione} positive max={20} hint="Lo trovi sull’etichetta." />
+    </div>
+  </fieldset>
+
+  <fieldset class="form-group">
+    <legend>Battiscopa</legend>
+    <div class="fields">
+      <Field
+        id="porte"
+        label="Larghezza porte"
+        unit="m"
+        value={defaults.porte}
+        optional
+        max={100}
+        hint="Totale dei vani porta senza battiscopa."
+      />
+    </div>
+  </fieldset>
+
+  <Fragment slot="result">
+    <p class="result-title">Risultato</p>
+    <dl class="kpis">
+      <div class="kpi kpi--main">
+        <dt>Confezioni da comprare</dt>
+        <dd><span data-out="confezioni">{p.text.confezioni}</span><small><span data-out="m2Acquistati">{p.text.m2Acquistati}</span> in totale</small></dd>
+      </div>
+      <div class="kpi">
+        <dt>Battiscopa</dt>
+        <dd><span data-out="battiscopa">{p.text.battiscopa}</span><small data-out="barre">{p.text.barre}</small></dd>
+      </div>
+    </dl>
+    <dl class="details">
+      <div><dt>Superficie netta</dt><dd data-out="superficie">{p.text.superficie}</dd></div>
+      <div><dt>Superficie con scarto (<span data-out="scarto">{p.text.scarto}</span>)</dt><dd data-out="m2ConScarto">{p.text.m2ConScarto}</dd></div>
+      <div><dt>Margine oltre lo scarto</dt><dd data-out="avanzo">{p.text.avanzo}</dd></div>
+      <div><dt>Perimetro <span data-show="perimetroStimato" hidden={!p.flags?.perimetroStimato}>(stimato)</span></dt><dd data-out="perimetro">{p.text.perimetro}</dd></div>
+    </dl>
+    <p class="result-note">
+      Confezioni arrotondate per eccesso. Il battiscopa include il 10% in più per i tagli agli angoli.
+      <span data-show="perimetroStimato" hidden={!p.flags?.perimetroStimato}>Il perimetro è stimato come per una stanza quadrata: per un dato preciso inserisci lunghezza e larghezza o il perimetro reale.</span>
+    </p>
+  </Fragment>
+
+  <Fragment slot="after-result">
+    <ProductBox group="parquet" />
+  </Fragment>
+
+  <Fragment slot="content">
+    <h2>Come si calcola la quantità di parquet</h2>
+    <p>
+      Il parquet si vende a confezioni, e ogni confezione contiene un certo numero di metri quadrati indicato
+      sull’etichetta. Per sapere quante confezioni comprare si parte dalla <strong>superficie del pavimento</strong>, si
+      aggiunge lo <strong>scarto</strong> legato al tipo di posa e si divide per i <strong>m² per confezione</strong>,
+      arrotondando sempre per eccesso.
+    </p>
+    <p class="formula">
+      m² con scarto = superficie × (1 + scarto %)<br />
+      confezioni = m² con scarto ÷ m² per confezione (per eccesso)<br />
+      battiscopa = (perimetro − larghezza porte) × 1,10
+    </p>
+
+    <h3>Lo scarto in base al tipo di posa</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Posa</th><th scope="col">Scarto indicativo</th><th scope="col">Perché</th></tr></thead>
+        <tbody>
+          <tr><td>Dritta</td><td>5–8%</td><td>Si taglia solo l’ultima doga di ogni fila; i ritagli spesso iniziano la fila successiva.</td></tr>
+          <tr><td>Diagonale</td><td>10–15%</td><td>Tutte le doghe lungo le pareti vanno tagliate a 45°.</td></tr>
+          <tr><td>Spina di pesce</td><td>15% e oltre</td><td>Molti tagli di precisione lungo il perimetro e poche possibilità di riutilizzo.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Il calcolatore propone {PARQUET_WASTE.dritta}% per la posa dritta, {PARQUET_WASTE.diagonale}% per quella
+      diagonale e {PARQUET_WASTE.spina}% per la spina di pesce, ma puoi modificare lo scarto in base alla forma della
+      stanza e all’esperienza di chi posa.
+    </p>
+
+    <h3>Come misurare la stanza</h3>
+    <p>
+      Misura lunghezza e larghezza nel punto più ampio, da muro a muro. Se la stanza è a L o ha rientranze, dividila in
+      rettangoli, calcola l’area di ciascuno e sommale; per il battiscopa somma invece la lunghezza di tutte le pareti.
+      Includi nel calcolo anche le zone sotto i mobili che potrebbero essere spostati in futuro, e ricorda gli spazi come
+      i vani porta, dove il parquet prosegue fino alla soglia.
+    </p>
+    <p>
+      Il calcolo è lo stesso per parquet massello, prefinito e laminato: cambia solo la quantità di metri quadrati per
+      confezione, che nei laminati è spesso più alta (2–2,5 m²).
+    </p>
+
+    <h3>Materiali accessori</h3>
+    <ul>
+      <li><strong>Materassino:</strong> per la posa flottante, quanto la superficie del pavimento più le sovrapposizioni.</li>
+      <li><strong>Barriera al vapore:</strong> un telo in polietilene sui massetti minerali, se non è già integrato nel materassino.</li>
+      <li><strong>Colla:</strong> per la posa incollata, in base alla resa al m² indicata dal produttore.</li>
+      <li><strong>Profili e soglie:</strong> per raccordare il parquet con altri pavimenti tra una stanza e l’altra.</li>
+      <li><strong>Battiscopa e accessori:</strong> angolari, terminali e clip o colla per il fissaggio.</li>
+    </ul>
+
+    <h2>Esempio pratico passo passo</h2>
+    <p>
+      Un soggiorno misura 5,20 × 4 m, ha una porta da 90 cm e vuoi posare un parquet in doghe con posa dritta. Le
+      confezioni contengono 1,87 m².
+    </p>
+    <ol class="steps">
+      <li><strong>Superficie:</strong> 5,20 × 4 = 20,8 m².</li>
+      <li><strong>Con l’8% di scarto:</strong> 20,8 × 1,08 = 22,46 m².</li>
+      <li><strong>Confezioni:</strong> 22,46 ÷ 1,87 = 12,01 → <strong>13 confezioni</strong> (24,31 m²).</li>
+      <li><strong>Perimetro:</strong> 2 × (5,20 + 4) = 18,4 m; togliendo la porta 18,4 − 0,9 = 17,5 m.</li>
+      <li><strong>Battiscopa con il 10% per i tagli:</strong> 17,5 × 1,10 = 19,25 m, cioè 9 barre da 2,4 m.</li>
+    </ol>
+    <p>
+      In questo caso bastano pochi centimetri quadrati in più per richiedere una confezione intera: è normale, e il
+      parquet in avanzo sarà prezioso se un giorno dovrai sostituire una doga danneggiata.
+    </p>
+
+    <h2>Errori comuni da evitare</h2>
+    <ul>
+      <li>
+        <strong>Calcolare i m² dalle misure delle doghe.</strong> Usa sempre i m² indicati sulla confezione: incastri e
+        maschiature riducono la superficie utile rispetto alle misure esterne.
+      </li>
+      <li>
+        <strong>Scegliere uno scarto troppo basso per la posa.</strong> Una spina di pesce con il 5% di scarto quasi
+        sicuramente non basta.
+      </li>
+      <li>
+        <strong>Comprare confezioni di lotti diversi.</strong> Il legno è un materiale naturale: tonalità e venature
+        cambiano tra una produzione e l’altra. Acquista tutto insieme.
+      </li>
+      <li>
+        <strong>Non acclimatare il parquet.</strong> Posare subito le doghe appena consegnate può causare fessure o
+        rigonfiamenti nelle settimane successive.
+      </li>
+      <li>
+        <strong>Dimenticare il giunto di dilatazione.</strong> Lungo le pareti serve uno spazio di alcuni millimetri,
+        coperto poi dal battiscopa.
+      </li>
+      <li>
+        <strong>Ignorare le stanze collegate.</strong> Se il parquet prosegue senza interruzioni in più stanze, calcola la
+        superficie totale insieme: conviene sia per lo scarto sia per acquistare un unico lotto.
+      </li>
+    </ul>
+    <p>
+      Stai confrontando più soluzioni per il pavimento? Prova anche il <a href="/calcolo-piastrelle/">calcolo delle
+      piastrelle</a>; per completare la stanza, il <a href="/calcolo-pittura/">calcolo pittura</a> ti dice quanti litri
+      servono per le pareti.
+    </p>
+  </Fragment>
+</CalculatorLayout>
+
+<script>
+  import { initCalculator, radioValue, setField } from '../scripts/calc-engine.ts';
+  import { calcParquet, estimatePerimeter, presentParquet, summaryParquet, PARQUET_WASTE, type ParquetInput } from '../lib/calc/parquet.ts';
+  import { int } from '../lib/format.ts';
+
+  // Il perimetro è stimato quando si conosce solo la superficie e non viene inserito a mano.
+  let perimetroStimato = true;
+
+  const ctrl = initCalculator({
+    read: (v, form): ParquetInput => {
+      const misure = radioValue(form, 'modo') === 'misure';
+      const superficie = misure ? v.lunghezza! * v.larghezza! : v.superficie!;
+      let perimetro: number;
+      if (misure) {
+        perimetro = 2 * (v.lunghezza! + v.larghezza!);
+        perimetroStimato = false;
+      } else if (v.perimetro) {
+        perimetro = v.perimetro;
+        perimetroStimato = false;
+      } else {
+        perimetro = estimatePerimeter(superficie);
+        perimetroStimato = true;
+      }
+      return { superficie, m2Confezione: v.m2Confezione!, scarto: v.scarto!, perimetro, porte: v.porte ?? 0 };
+    },
+    compute: calcParquet,
+    present: (i, r) => presentParquet(i, r, perimetroStimato),
+    summary: (i, r) => summaryParquet(i, r, perimetroStimato),
+    announce: (_i, r) => `Servono ${int(r.confezioni)} confezioni di parquet.`,
+  });
+
+  if (ctrl) {
+    const { form } = ctrl;
+    form.querySelectorAll<HTMLInputElement>('input[name="modo"]').forEach((radio) =>
+      radio.addEventListener('change', () => {
+        const mode = radioValue(form, 'modo');
+        form.querySelectorAll<HTMLElement>('[data-mode]').forEach((el) => (el.hidden = el.dataset.mode !== mode));
+      }),
+    );
+    form.querySelectorAll<HTMLInputElement>('input[name="posa"]').forEach((radio) =>
+      radio.addEventListener('change', () => {
+        const posa = radioValue(form, 'posa') as keyof typeof PARQUET_WASTE;
+        setField(form, 'scarto', PARQUET_WASTE[posa]);
+      }),
+    );
+  }
+</script>

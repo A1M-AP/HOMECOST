@@ -1,0 +1,84 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import { SITE } from '../config/site';
+---
+<PageLayout
+  title="Privacy policy | HomeCost"
+  description="Informativa sul trattamento dei dati personali degli utenti di HomeCost ai sensi del Regolamento UE 2016/679 (GDPR)."
+  h1="Privacy policy"
+  updated="[DA COMPLETARE]"
+>
+  <p class="placeholder-note">
+    <strong>Testo segnaposto.</strong> Questa informativa è una base da completare e verificare, preferibilmente con un
+    consulente privacy, prima della pubblicazione del sito. Le parti tra parentesi quadre vanno sostituite.
+  </p>
+
+  <h2>1. Titolare del trattamento</h2>
+  <p>
+    Il titolare del trattamento è [NOME E COGNOME / RAGIONE SOCIALE], con sede in [INDIRIZZO], [P. IVA / CODICE FISCALE],
+    contattabile all’indirizzo <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
+  </p>
+
+  <h2>2. Quali dati trattiamo</h2>
+  <ul>
+    <li>
+      <strong>Dati inseriti nei calcolatori:</strong> i valori che inserisci (misure, consumi, canoni, nomi e indirizzi
+      nella lettera ISTAT) sono elaborati esclusivamente nel tuo browser e non vengono inviati né conservati da HomeCost.
+    </li>
+    <li>
+      <strong>Dati di navigazione:</strong> il fornitore di hosting ([NETLIFY / CLOUDFLARE – DA COMPLETARE]) registra dati
+      tecnici come indirizzo IP, data e ora della richiesta e pagina visitata, necessari al funzionamento e alla
+      sicurezza del sito.
+    </li>
+    <li>
+      <strong>Dati forniti volontariamente:</strong> se ci scrivi via e-mail trattiamo il tuo indirizzo e le informazioni
+      contenute nel messaggio.
+    </li>
+    <li>
+      <strong>Cookie e strumenti simili:</strong> vedi la <a href="/cookie-policy/">cookie policy</a>. Cookie di
+      statistica e pubblicitari sono usati solo con il tuo consenso.
+    </li>
+  </ul>
+
+  <h2>3. Finalità e basi giuridiche</h2>
+  <ul>
+    <li>Fornire il sito e garantirne la sicurezza: legittimo interesse del titolare (art. 6.1.f GDPR).</li>
+    <li>Rispondere alle tue richieste: esecuzione di misure richieste dall’interessato (art. 6.1.b GDPR).</li>
+    <li>Statistiche di utilizzo e pubblicità: consenso (art. 6.1.a GDPR), revocabile in ogni momento.</li>
+  </ul>
+
+  <h2>4. Destinatari</h2>
+  <p>
+    I dati possono essere trattati da fornitori che agiscono come responsabili del trattamento: hosting
+    ([DA COMPLETARE]), statistiche ([ES. GOOGLE ANALYTICS – DA COMPLETARE]), pubblicità ([ES. GOOGLE ADSENSE – DA
+    COMPLETARE]). Quando clicchi un link di affiliazione vieni indirizzato al sito del partner (ad esempio Amazon), che
+    tratta i dati come titolare autonomo secondo la propria informativa.
+  </p>
+
+  <h2>5. Trasferimenti fuori dall’Unione europea</h2>
+  <p>
+    Alcuni fornitori possono trattare dati negli Stati Uniti o in altri Paesi extra UE. In questi casi il trasferimento
+    avviene sulla base di una decisione di adeguatezza (ad esempio l’EU-U.S. Data Privacy Framework) o di clausole
+    contrattuali standard. [DA VERIFICARE PER CIASCUN FORNITORE]
+  </p>
+
+  <h2>6. Conservazione</h2>
+  <p>
+    I dati di navigazione sono conservati per il tempo stabilito dal fornitore di hosting [DA COMPLETARE]; le e-mail per
+    il tempo necessario a gestire la richiesta; i dati raccolti tramite cookie per la durata indicata nella cookie policy.
+  </p>
+
+  <h2>7. I tuoi diritti</h2>
+  <p>
+    Puoi chiedere in qualsiasi momento l’accesso ai tuoi dati, la rettifica, la cancellazione, la limitazione, la
+    portabilità e opporti al trattamento (artt. 15–22 GDPR), scrivendo a
+    <a href={`mailto:${SITE.email}`}>{SITE.email}</a>. Puoi revocare il consenso ai cookie da “Preferenze cookie” in
+    fondo a ogni pagina. Hai inoltre diritto di proporre reclamo al Garante per la protezione dei dati personali
+    (<a href="https://www.garanteprivacy.it/" rel="noopener" target="_blank">www.garanteprivacy.it</a>).
+  </p>
+
+  <h2>8. Modifiche</h2>
+  <p>
+    Questa informativa può essere aggiornata. La data dell’ultima modifica è indicata in alto.
+  </p>
+</PageLayout>

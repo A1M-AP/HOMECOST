@@ -1,0 +1,54 @@
+---
+import Logo from './Logo.astro';
+import Icon from './Icon.astro';
+import { CALCULATORS } from '../config/calculators';
+
+const current = Astro.url.pathname;
+---
+<header class="site-header">
+  <div class="container header-inner">
+    <a href="/" class="logo" aria-label="HomeCost, vai alla homepage">
+      <Logo />
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+      <Icon name="menu" />
+      <span>Calcolatori</span>
+    </button>
+    <nav id="site-nav" class="site-nav" aria-label="Menu principale">
+      <ul>
+        {
+          CALCULATORS.map((c) => (
+            <li>
+              <a href={c.path} aria-current={current === c.path ? 'page' : undefined}>
+                <Icon name={c.icon} />
+                {c.navLabel}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('.nav-toggle');
+  const nav = document.getElementById('site-nav');
+  if (toggle && nav) {
+    const setOpen = (open: boolean) => {
+      toggle.setAttribute('aria-expanded', String(open));
+      nav.classList.toggle('is-open', open);
+    };
+    toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && nav.classList.contains('is-open')) {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+    document.addEventListener('click', (e) => {
+      const target = e.target as Node;
+      if (nav.classList.contains('is-open') && !nav.contains(target) && !toggle.contains(target)) setOpen(false);
+    });
+  }
+</script>

@@ -1,0 +1,69 @@
+---
+/**
+ * Campo numerico con etichetta, unità di misura, suggerimento e messaggio di errore.
+ * La validazione avviene nel browser (src/scripts/calc-engine.ts) in base agli attributi data-*.
+ */
+interface Props {
+  id: string;
+  label: string;
+  value?: string | number;
+  unit?: string;
+  hint?: string;
+  /** Valore minimo ammesso (incluso). Default 0: niente valori negativi. */
+  min?: number;
+  max?: number;
+  /** true = il valore deve essere maggiore di zero. */
+  positive?: boolean;
+  integer?: boolean;
+  optional?: boolean;
+  placeholder?: string;
+  full?: boolean;
+  class?: string;
+}
+const {
+  id,
+  label,
+  value,
+  unit,
+  hint,
+  min = 0,
+  max,
+  positive = false,
+  integer = false,
+  optional = false,
+  placeholder,
+  full = false,
+  class: className,
+} = Astro.props;
+
+const describedBy = [hint ? `${id}-hint` : null, `${id}-err`].filter(Boolean).join(' ');
+const displayValue = typeof value === 'number' ? String(value).replace('.', ',') : value;
+// Spazio a destra per l'unità di misura, proporzionale alla sua lunghezza.
+const unitWidth = unit ? `${Math.max(44, unit.length * 9 + 26)}px` : undefined;
+---
+<div class:list={['field', { 'field--full': full }, className]}>
+  <label for={id}>{label}{unit && <span class="sr-only"> ({unit})</span>}</label>
+  <div class:list={['input-wrap', { 'has-unit': !!unit }]} style={unitWidth ? `--unit-w:${unitWidth}` : undefined}>
+    <input
+      id={id}
+      name={id}
+      type="text"
+      inputmode={integer ? 'numeric' : 'decimal'}
+      autocomplete="off"
+      spellcheck="false"
+      value={displayValue}
+      placeholder={placeholder}
+      aria-describedby={describedBy}
+      data-num
+      data-label={label}
+      data-min={min}
+      data-max={max}
+      data-positive={positive ? '' : undefined}
+      data-integer={integer ? '' : undefined}
+      data-optional={optional ? '' : undefined}
+    />
+    {unit && <span class="unit" aria-hidden="true">{unit}</span>}
+  </div>
+  {hint && <p class="hint" id={`${id}-hint`}>{hint}</p>}
+  <p class="error" id={`${id}-err`} hidden></p>
+</div>

@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CalcTile from '../components/CalcTile.astro';
+import { CALCULATORS } from '../config/calculators';
+---
+<BaseLayout title="Pagina non trovata | HomeCost" description="La pagina che cerchi non esiste o è stata spostata." noindex>
+  <div class="container not-found">
+    <h1>Pagina non trovata</h1>
+    <p>La pagina che cerchi non esiste o è stata spostata. Prova con uno dei nostri calcolatori:</p>
+    <ul class="calc-grid">
+      {CALCULATORS.map((c) => <li><CalcTile calc={c} headingLevel="h2" /></li>)}
+    </ul>
+    <p style="margin-top:32px"><a class="btn btn-primary" href="/">Torna alla homepage</a></p>
+  </div>
+</BaseLayout>

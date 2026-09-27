@@ -1,0 +1,79 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import { CONSENT } from '../config/site';
+---
+<PageLayout
+  title="Cookie policy | HomeCost"
+  description="Quali cookie e strumenti simili usa HomeCost, per quali finalità e come gestire o revocare il consenso."
+  h1="Cookie policy"
+  updated="[DA COMPLETARE]"
+>
+  <p class="placeholder-note">
+    <strong>Testo segnaposto.</strong> Completa l’elenco dei cookie in base ai servizi effettivamente attivati
+    (statistiche, pubblicità) e verifica il testo prima della pubblicazione.
+  </p>
+
+  <h2>Che cosa sono i cookie</h2>
+  <p>
+    I cookie sono piccoli file di testo che i siti salvano sul tuo dispositivo. Strumenti simili, come il localStorage del
+    browser, funzionano in modo analogo. Alcuni sono indispensabili al funzionamento del sito, altri servono a fini
+    statistici o pubblicitari e richiedono il tuo consenso.
+  </p>
+
+  <h2>Come raccogliamo il consenso</h2>
+  <p>
+    Alla prima visita un banner ti permette di <strong>accettare</strong> o <strong>rifiutare</strong> i cookie non
+    tecnici con due pulsanti di uguale evidenza, oppure di <strong>personalizzare</strong> la scelta per categoria.
+    Chiudendo il banner con la “X” continui la navigazione senza cookie non tecnici. Prima della tua scelta non viene
+    caricato alcuno script di statistica o pubblicità. La scelta viene ricordata per {CONSENT.maxAgeDays} giorni,
+    trascorsi i quali ti verrà chiesta di nuovo.
+  </p>
+  <p>
+    Puoi cambiare idea in qualsiasi momento: <button type="button" class="btn btn-outline btn-sm" data-consent-open>Apri le preferenze cookie</button>
+  </p>
+
+  <h2>Cookie e strumenti usati</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th scope="col">Nome</th><th scope="col">Tipo</th><th scope="col">Finalità</th><th scope="col">Durata</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>{CONSENT.storageKey}</code> (localStorage)</td>
+          <td>Tecnico, prima parte</td>
+          <td>Ricorda le tue scelte sui cookie</td>
+          <td>{CONSENT.maxAgeDays} giorni</td>
+        </tr>
+        <tr>
+          <td>[ES. _ga, _ga_*] – DA COMPLETARE</td>
+          <td>Statistica, terza parte (Google Analytics)</td>
+          <td>Statistiche aggregate sull’uso del sito, solo con consenso</td>
+          <td>[DA COMPLETARE]</td>
+        </tr>
+        <tr>
+          <td>[ES. __gads, __gpi] – DA COMPLETARE</td>
+          <td>Pubblicità, terza parte (Google AdSense)</td>
+          <td>Mostrare e misurare annunci, anche personalizzati, solo con consenso</td>
+          <td>[DA COMPLETARE]</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Per i servizi di terze parti valgono anche le rispettive informative, ad esempio quella di Google:
+    <a href="https://policies.google.com/technologies/cookies" rel="noopener" target="_blank">come Google utilizza i cookie</a>.
+  </p>
+
+  <h2>Link di affiliazione</h2>
+  <p>
+    Alcuni link portano a siti di partner (ad esempio Amazon). Il clic su questi link non installa cookie su HomeCost, ma
+    il sito del partner può usare i propri cookie, secondo la sua informativa, anche per attribuire la commissione.
+  </p>
+
+  <h2>Gestire i cookie dal browser</h2>
+  <p>
+    Puoi anche cancellare o bloccare i cookie dalle impostazioni del tuo browser. Bloccare i cookie tecnici potrebbe
+    impedire al sito di ricordare le tue scelte.
+  </p>
+</PageLayout>

@@ -1,0 +1,11 @@
+{
+  "_istruzioni": "Indici FOI senza tabacchi pubblicati dall'ISTAT. Una riga per mese nel formato \"AAAA-MM\": valore (numero con il punto come separatore decimale, es. 121.3, senza virgolette). Sostituisci i segnaposto con i dati ufficiali e aggiorna _aggiornato con la data di oggi (AAAA-MM-GG). Tutti gli indici devono avere la stessa base. Le chiavi che iniziano con _ sono note e vengono ignorate dal calcolatore.",
+  "_fonte": "ISTAT - Indici dei prezzi al consumo per le famiglie di operai e impiegati (FOI), senza tabacchi - https://www.istat.it/",
+  "_aggiornato": "DA AGGIORNARE",
+  "2025-07": "DA AGGIORNARE CON DATI UFFICIALI ISTAT",
+  "2025-08": "DA AGGIORNARE CON DATI UFFICIALI ISTAT",
+  "2025-09": "DA AGGIORNARE CON DATI UFFICIALI ISTAT",
+  "2026-07": "DA AGGIORNARE CON DATI UFFICIALI ISTAT",
+  "2026-08": "DA AGGIORNARE CON DATI UFFICIALI ISTAT",
+  "2026-09": "DA AGGIORNARE CON DATI UFFICIALI ISTAT"
+}

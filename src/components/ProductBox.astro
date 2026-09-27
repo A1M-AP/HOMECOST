@@ -1,0 +1,48 @@
+---
+/**
+ * "Prodotti consigliati": 3 schede prodotto con link affiliato Amazon.
+ * I prodotti si modificano in src/config/affiliates.ts.
+ */
+import Icon from './Icon.astro';
+import AffiliateDisclosure from './AffiliateDisclosure.astro';
+import { PRODUCTS, PRODUCT_PLACEHOLDER_IMAGE, productUrl, type Product, type ProductGroupId } from '../config/affiliates';
+
+interface Props {
+  group: ProductGroupId;
+  title?: string;
+}
+const { group, title = 'Prodotti consigliati' } = Astro.props;
+const products: Product[] = PRODUCTS[group];
+const headingId = `prod-${group}`;
+---
+<section class="products" aria-labelledby={headingId}>
+  <h2 id={headingId}>{title}</h2>
+  <ul class="product-grid">
+    {
+      products.map((p) => (
+        <li>
+          <article class="product">
+            <img
+              src={p.image ?? PRODUCT_PLACEHOLDER_IMAGE}
+              alt=""
+              width="320"
+              height="240"
+              loading="lazy"
+              decoding="async"
+            />
+            <div class="product-body">
+              <h3>{p.name}</h3>
+              <p>{p.description}</p>
+              <a class="btn btn-outline btn-sm" href={productUrl(p)} rel="sponsored nofollow noopener" target="_blank">
+                Vedi su Amazon
+                <Icon name="external" />
+                <span class="sr-only">: {p.name} (si apre in una nuova scheda)</span>
+              </a>
+            </div>
+          </article>
+        </li>
+      ))
+    }
+  </ul>
+  <AffiliateDisclosure />
+</section>
