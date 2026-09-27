@@ -1,0 +1,46 @@
+---
+import Icon from './Icon.astro';
+---
+<div
+  id="cookie-banner"
+  class="cookie-banner"
+  role="dialog"
+  aria-modal="false"
+  aria-labelledby="cb-title"
+  aria-describedby="cb-desc"
+  hidden
+>
+  <button type="button" class="cb-close" data-consent="reject" aria-label="Chiudi: continua senza accettare i cookie non tecnici">
+    <Icon name="close" />
+  </button>
+  <p id="cb-title" class="cb-title">Cookie e privacy</p>
+  <p id="cb-desc">
+    Usiamo cookie tecnici. Con il tuo consenso anche cookie di statistica e pubblicità di terze parti; puoi
+    cambiare idea da “Preferenze cookie” a fondo pagina. <a href="/cookie-policy/">Cookie policy</a>
+  </p>
+  <fieldset class="cb-prefs" hidden>
+    <legend class="sr-only">Scegli le categorie di cookie</legend>
+    <label>
+      <input type="checkbox" checked disabled />
+      <span><strong>Tecnici (sempre attivi)</strong><small>Necessari al funzionamento e a ricordare questa scelta.</small></span>
+    </label>
+    <label>
+      <input type="checkbox" name="cb-analytics" />
+      <span><strong>Statistiche</strong><small>Ci aiutano a capire quali pagine sono più utili, in forma aggregata.</small></span>
+    </label>
+    <label>
+      <input type="checkbox" name="cb-ads" />
+      <span><strong>Pubblicità</strong><small>Permettono di mostrare annunci, anche personalizzati, tramite partner esterni.</small></span>
+    </label>
+  </fieldset>
+  <div class="cb-actions">
+    <button type="button" class="btn btn-consent" data-consent="reject">Rifiuta</button>
+    <button type="button" class="btn btn-consent" data-consent="accept">Accetta</button>
+    <button type="button" class="btn btn-consent" data-consent="save" hidden>Salva le mie scelte</button>
+    <button type="button" class="cb-more" data-consent="customize">Personalizza</button>
+  </div>
+</div>
+
+<script>
+  import '../scripts/consent.ts';
+</script>

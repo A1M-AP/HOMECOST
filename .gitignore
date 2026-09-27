@@ -1,0 +1,14 @@
+# build
+dist/
+.astro/
+
+# dipendenze
+node_modules/
+
+# log e file locali
+npm-debug.log*
+.DS_Store
+.env
+.env.*
+.netlify/
+.wrangler/

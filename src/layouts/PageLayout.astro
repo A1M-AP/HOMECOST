@@ -1,0 +1,25 @@
+---
+/** Layout per le pagine di testo (chi siamo, contatti, pagine legali). */
+import BaseLayout from './BaseLayout.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  h1: string;
+  noindex?: boolean;
+  /** Data dell'ultimo aggiornamento del testo (pagine legali). */
+  updated?: string;
+}
+const { title, description, h1, noindex, updated } = Astro.props;
+---
+<BaseLayout title={title} description={description} noindex={noindex}>
+  <div class="container">
+    <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: h1, path: Astro.url.pathname }]} />
+    <article class="prose page-legal">
+      <h1>{h1}</h1>
+      {updated && <p class="data-status">Ultimo aggiornamento: {updated}</p>}
+      <slot />
+    </article>
+  </div>
+</BaseLayout>

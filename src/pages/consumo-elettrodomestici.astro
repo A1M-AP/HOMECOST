@@ -1,0 +1,267 @@
+---
+import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Field from '../components/Field.astro';
+import AffiliateBox from '../components/AffiliateBox.astro';
+import { APPLIANCES, calcEnergia, presentEnergia, type EnergiaInput } from '../lib/calc/energia';
+import { ENERGY_PRICE_DEFAULT } from '../config/site';
+import { euro, fmt } from '../lib/format';
+
+const preset = APPLIANCES.find((a) => a.id === 'condizionatore')!;
+const defaults: EnergiaInput = {
+  watt: preset.watt,
+  oreGiorno: preset.oreGiorno,
+  giorniMese: preset.giorniMese,
+  prezzoKwh: ENERGY_PRICE_DEFAULT,
+  standbyWatt: preset.standbyWatt,
+};
+const p = presentEnergia(defaults, calcEnergia(defaults));
+
+// Tabella dei consumi tipici, generata dagli stessi valori del menu a tendina.
+const table = APPLIANCES.map((a) => {
+  const r = calcEnergia({ watt: a.watt, oreGiorno: a.oreGiorno, giorniMese: a.giorniMese, prezzoKwh: ENERGY_PRICE_DEFAULT, standbyWatt: a.standbyWatt });
+  return { ...a, kwh: r.kwhMese, costo: r.costoMese };
+});
+const price = fmt(ENERGY_PRICE_DEFAULT, 2, 2);
+
+const faq = [
+  {
+    q: 'Come faccio a sapere quanti watt consuma il mio elettrodomestico?',
+    a: 'Cerca la targhetta tecnica (di solito sul retro o all’interno dello sportello) o il libretto di istruzioni: trovi la potenza in watt (W) o kilowatt (1 kW = 1.000 W). Per frigoriferi, lavatrici e lavastoviglie è ancora più utile l’etichetta energetica, che indica il consumo in kWh all’anno o per 100 cicli. Per una misura precisa puoi usare una presa con misuratore di consumo.',
+  },
+  {
+    q: 'Qual è la differenza tra kW e kWh?',
+    a: 'Il kW (kilowatt) misura la potenza, cioè quanta energia un apparecchio assorbe in ogni istante. Il kWh (kilowattora) misura l’energia consumata nel tempo: un apparecchio da 1 kW acceso per un’ora consuma 1 kWh. In bolletta paghi i kWh consumati, mentre i kW determinano la potenza impegnata del contatore.',
+  },
+  {
+    q: 'Quanto consuma un elettrodomestico in standby?',
+    a: 'I modelli recenti in standby assorbono in genere meno di 1 W, ma decoder, console, vecchi televisori e alimentatori possono arrivare a 5–10 W. Sembra poco, ma un apparecchio da 5 W sempre in standby consuma circa 44 kWh l’anno. Con una ciabatta con interruttore azzeri questo consumo.',
+  },
+  {
+    q: 'Che prezzo dell’energia devo inserire?',
+    a: 'Il più affidabile è il prezzo medio “tutto compreso” della tua bolletta: dividi il totale della bolletta luce per i kWh consumati nello stesso periodo. Così includi materia energia, trasporto, oneri di sistema e imposte. Il valore proposto nel calcolatore è solo indicativo.',
+  },
+  {
+    q: 'Conviene usare gli elettrodomestici di sera o nel weekend?',
+    a: 'Solo se hai una tariffa bioraria o multioraria. In quel caso le fasce F2 (dal lunedì al venerdì 7–8 e 19–23, sabato 7–23) e F3 (notte, domenica e festivi) costano di solito meno della fascia F1 (dal lunedì al venerdì 8–19). Con una tariffa monoraria il prezzo è lo stesso a ogni ora.',
+  },
+  {
+    q: 'Quanto consuma un frigorifero in un anno?',
+    a: 'Un frigorifero combinato recente consuma in genere tra 150 e 300 kWh l’anno: il dato esatto è riportato sull’etichetta energetica. Per stimarlo con il calcolatore scegli “Frigorifero”, lascia 24 ore al giorno e 30 giorni al mese: la potenza indicata è già la media sulle 24 ore, perché il compressore si accende e si spegne.',
+  },
+];
+---
+<CalculatorLayout
+  calc="energia"
+  title="Calcolo consumo elettrodomestici: costo in bolletta | HomeCost"
+  description="Calcola gratis quanto consuma e quanto costa in bolletta un elettrodomestico al mese e all’anno: forno, condizionatore, lavatrice, TV, standby inclusi."
+  h1="Quanto costa in bolletta un elettrodomestico?"
+  lead="Inserisci potenza, ore di utilizzo e prezzo dell’energia: scopri subito quanti kWh consuma e quanto spendi ogni mese e ogni anno."
+  faq={faq}
+  copyTitle="Costo in bolletta di un elettrodomestico"
+>
+  <div class="fields">
+    <div class="field field--full">
+      <label for="apparecchio">Elettrodomestico</label>
+      <select id="apparecchio" name="apparecchio" aria-describedby="apparecchio-hint">
+        <option value="">Personalizzato (inserisci tu i valori)</option>
+        {APPLIANCES.map((a) => <option value={a.id} selected={a.id === preset.id}>{a.label}</option>)}
+      </select>
+      <p class="hint" id="apparecchio-hint" data-appliance-hint>{preset.hint}</p>
+    </div>
+    <Field id="watt" label="Potenza" unit="W" value={defaults.watt} positive max={30000} />
+    <Field id="ore" label="Ore al giorno" unit="h" value={defaults.oreGiorno} positive max={24} />
+    <Field id="giorni" label="Giorni al mese" unit="gg" value={defaults.giorniMese} positive integer max={31} />
+    <Field
+      id="prezzo"
+      label="Prezzo energia"
+      unit="€/kWh"
+      value={fmt(ENERGY_PRICE_DEFAULT, 4)}
+      positive
+      max={5}
+      hint="Valore indicativo, inserisci quello della tua bolletta."
+    />
+    <Field
+      id="standby"
+      label="Standby (facoltativo)"
+      unit="W"
+      value={defaults.standbyWatt || undefined}
+      optional
+      max={500}
+      hint="Consumo quando è spento ma resta collegato alla presa."
+      full
+    />
+  </div>
+
+  <Fragment slot="result">
+    <p class="result-title">Risultato</p>
+    <dl class="kpis">
+      <div class="kpi kpi--main">
+        <dt>Costo al mese</dt>
+        <dd><span data-out="costoMese">{p.text.costoMese}</span><small data-out="kwhMese">{p.text.kwhMese}</small></dd>
+      </div>
+      <div class="kpi">
+        <dt>Costo all’anno</dt>
+        <dd><span data-out="costoAnno">{p.text.costoAnno}</span><small data-out="kwhAnno">{p.text.kwhAnno}</small></dd>
+      </div>
+    </dl>
+    <dl class="details">
+      <div><dt>Consumo mensile durante l’uso</dt><dd data-out="kwhUso">{p.text.kwhUso}</dd></div>
+      <div data-show="standby" hidden={!p.flags?.standby}><dt>Consumo mensile in standby</dt><dd data-out="kwhStandby">{p.text.kwhStandby}</dd></div>
+      <div data-show="standby" hidden={!p.flags?.standby}><dt>Costo annuo dello standby</dt><dd data-out="costoStandbyAnno">{p.text.costoStandbyAnno}</dd></div>
+      <div><dt>Costo per giorno di utilizzo</dt><dd data-out="costoGiorno">{p.text.costoGiorno}</dd></div>
+      <div><dt>Costo di un’ora di utilizzo</dt><dd data-out="costoOraUso">{p.text.costoOraUso}</dd></div>
+    </dl>
+    <p class="result-note">
+      Il costo annuale moltiplica per 12 il costo mensile. Per apparecchi stagionali come condizionatore e stufa,
+      moltiplica il costo mensile per i mesi in cui li usi davvero.
+    </p>
+  </Fragment>
+
+  <Fragment slot="after-result">
+    <AffiliateBox id="energia" />
+  </Fragment>
+
+  <Fragment slot="content">
+    <h2>Come si calcola il costo in bolletta di un elettrodomestico</h2>
+    <p>
+      Per sapere quanto ti costa un elettrodomestico servono solo tre informazioni: la <strong>potenza</strong> che
+      assorbe mentre funziona, <strong>per quanto tempo</strong> lo usi e il <strong>prezzo</strong> che paghi per ogni
+      kilowattora. La potenza si misura in watt (W), l’energia consumata in kilowattora (kWh): un apparecchio da
+      1.000 W acceso per un’ora consuma 1 kWh.
+    </p>
+    <p>Il calcolatore applica queste formule:</p>
+    <p class="formula">
+      kWh al mese = W × ore al giorno × giorni al mese ÷ 1.000<br />
+      kWh standby = W standby × ore in standby ÷ 1.000<br />
+      costo mensile = (kWh al mese + kWh standby) × prezzo €/kWh<br />
+      costo annuale = costo mensile × 12
+    </p>
+    <p>
+      Le ore in standby sono quelle in cui l’apparecchio resta collegato alla presa senza lavorare: su un mese standard
+      di 30 giorni (720 ore) sono le ore che restano togliendo quelle di utilizzo. Il consumo in standby è facoltativo:
+      se stacchi la spina o usi una ciabatta con interruttore, lascia il campo vuoto.
+    </p>
+
+    <h3>Dove trovare la potenza e il prezzo giusti</h3>
+    <p>
+      La potenza è scritta sulla targhetta tecnica o nel libretto. Attenzione però: molti elettrodomestici non
+      assorbono sempre la potenza di targa. Forno, frigorifero, condizionatore e scaldabagno hanno un termostato o un
+      compressore che si accende e si spegne; la lavatrice scalda l’acqua solo nella prima parte del ciclo. Per questo
+      il menu a tendina propone una <strong>potenza media realistica</strong>, che puoi sempre modificare.
+    </p>
+    <p>
+      Per il prezzo, il valore più corretto è quello medio “tutto compreso” della tua bolletta: dividi l’importo totale
+      della bolletta luce per i kWh consumati nel periodo. Così includi materia energia, trasporto, oneri di sistema e
+      imposte. Il valore di {price} €/kWh proposto è solo un punto di partenza.
+    </p>
+
+    <h2>Esempio pratico passo passo</h2>
+    <p>
+      Calcoliamo quanto costa un condizionatore inverter con una potenza media di 800 W, acceso 6 ore al giorno per
+      30 giorni, con un consumo in standby di 2 W e un prezzo di 0,28 €/kWh.
+    </p>
+    <ol class="steps">
+      <li><strong>Consumo durante l’uso:</strong> 800 × 6 × 30 ÷ 1.000 = 144 kWh al mese.</li>
+      <li><strong>Ore in standby:</strong> 720 − (6 × 30) = 540 ore.</li>
+      <li><strong>Consumo in standby:</strong> 2 × 540 ÷ 1.000 = 1,08 kWh al mese.</li>
+      <li><strong>Consumo totale:</strong> 144 + 1,08 = 145,08 kWh al mese.</li>
+      <li><strong>Costo mensile:</strong> 145,08 × 0,28 = circa 40,62 €.</li>
+      <li><strong>Costo stagionale:</strong> se lo usi da giugno ad agosto, 40,62 × 3 = circa 122 € in un’estate.</li>
+    </ol>
+    <p>
+      Nell’esempio lo standby pesa 1,08 kWh al mese, cioè circa 3,60 € l’anno: poco per un singolo apparecchio, ma in
+      una casa con dieci dispositivi sempre collegati la cifra si moltiplica.
+    </p>
+
+    <h2>Consumi indicativi degli elettrodomestici più comuni</h2>
+    <p>
+      La tabella usa i valori medi del calcolatore e un prezzo di {price} €/kWh. I tuoi consumi reali dipendono da
+      modello, classe energetica e abitudini.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th scope="col">Elettrodomestico</th><th scope="col">Potenza media</th><th scope="col">Uso ipotizzato</th><th scope="col">kWh/mese</th><th scope="col">€/mese</th></tr>
+        </thead>
+        <tbody>
+          {
+            table.map((row) => (
+              <tr>
+                <td>{row.label}</td>
+                <td>{fmt(row.watt, 0)} W</td>
+                <td>{fmt(row.oreGiorno, 1)} h × {row.giorniMese} gg</td>
+                <td>{fmt(row.kwh, 1)}</td>
+                <td>{euro(row.costo)}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Errori comuni da evitare</h2>
+    <ul>
+      <li>
+        <strong>Usare sempre la potenza di targa.</strong> Per gli apparecchi con termostato o compressore porta a
+        sovrastimare il consumo anche del doppio. Se hai un dubbio, misura con una presa con contatore di energia.
+      </li>
+      <li>
+        <strong>Confondere W e kWh.</strong> I watt indicano la potenza istantanea, i kWh l’energia consumata nel tempo:
+        in bolletta paghi i kWh.
+      </li>
+      <li>
+        <strong>Inserire solo il prezzo della materia energia.</strong> Il prezzo all’ingrosso o la sola “quota energia”
+        dell’offerta non comprendono trasporto, oneri e imposte: il costo reale per kWh è più alto.
+      </li>
+      <li>
+        <strong>Dimenticare lo standby.</strong> Decoder, console, stampanti e caricabatterie consumano anche da spenti.
+      </li>
+      <li>
+        <strong>Moltiplicare per 12 i consumi stagionali.</strong> Condizionatore e stufa si usano pochi mesi l’anno:
+        considera solo i mesi di utilizzo effettivo.
+      </li>
+    </ul>
+    <p>
+      Una volta noti i consumi, il modo più rapido per spendere meno è verificare che la tua tariffa sia ancora
+      conveniente e, se hai una tariffa bioraria, spostare gli usi più energivori (lavatrice, lavastoviglie,
+      asciugatrice) nelle fasce serali e nel weekend.
+    </p>
+  </Fragment>
+</CalculatorLayout>
+
+<script>
+  import { initCalculator, setField } from '../scripts/calc-engine.ts';
+  import { APPLIANCES, calcEnergia, presentEnergia, summaryEnergia } from '../lib/calc/energia.ts';
+  import { euro } from '../lib/format.ts';
+
+  const select = document.querySelector<HTMLSelectElement>('#apparecchio');
+  const hint = document.querySelector<HTMLElement>('[data-appliance-hint]');
+  const defaultHint = 'Scegli un elettrodomestico per precompilare valori indicativi, oppure inserisci i tuoi.';
+  const applianceLabel = () => APPLIANCES.find((a) => a.id === select?.value)?.label ?? '';
+
+  const ctrl = initCalculator({
+    read: (v) => ({
+      watt: v.watt!,
+      oreGiorno: v.ore!,
+      giorniMese: v.giorni!,
+      prezzoKwh: v.prezzo!,
+      standbyWatt: v.standby ?? 0,
+    }),
+    compute: (input) => ({ ok: true, result: calcEnergia(input) }),
+    present: presentEnergia,
+    summary: (input, result) => summaryEnergia(input, result, applianceLabel()),
+    announce: (_input, r) => `Costo stimato: ${euro(r.costoMese)} al mese, ${euro(r.costoAnno)} all’anno.`,
+  });
+
+  select?.addEventListener('change', () => {
+    const a = APPLIANCES.find((x) => x.id === select.value);
+    if (hint) hint.textContent = a ? a.hint : defaultHint;
+    if (!a || !ctrl) return;
+    setField(ctrl.form, 'watt', a.watt);
+    setField(ctrl.form, 'ore', a.oreGiorno);
+    setField(ctrl.form, 'giorni', a.giorniMese);
+    const standby = ctrl.form.querySelector<HTMLInputElement>('input[name="standby"]');
+    if (standby) standby.value = a.standbyWatt ? String(a.standbyWatt).replace('.', ',') : '';
+    ctrl.refresh();
+  });
+</script>

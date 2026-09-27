@@ -1,0 +1,239 @@
+---
+import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Field from '../components/Field.astro';
+import ProductBox from '../components/ProductBox.astro';
+import { calcPiastrelle, presentPiastrelle, TILE_WASTE, type PiastrelleInput } from '../lib/calc/piastrelle';
+
+const defaults: PiastrelleInput = { superficie: 20, latoA: 60, latoB: 60, m2Scatola: 1.44, scarto: TILE_WASTE.dritta };
+const outcome = calcPiastrelle(defaults);
+if (!outcome.ok) throw new Error('Valori predefiniti non validi');
+const p = presentPiastrelle(defaults, outcome.result);
+
+const faq = [
+  {
+    q: 'Quanto scarto devo calcolare per le piastrelle?',
+    a: 'Per una posa dritta si calcola di solito il 10% in più; per una posa diagonale il 15%, perché lungo i bordi quasi ogni piastrella va tagliata. In stanze con molti angoli, nicchie o pilastri, o con formati molto grandi, conviene salire al 15–20%.',
+  },
+  {
+    q: 'Perché è importante comprare piastrelle dello stesso lotto?',
+    a: 'Ogni lotto di produzione può avere una tonalità e un calibro (la dimensione reale) leggermente diversi. Mescolare lotti diversi può creare differenze di colore visibili e fughe irregolari: per questo conviene comprare subito tutte le scatole, più qualche piastrella di scorta per eventuali riparazioni.',
+  },
+  {
+    q: 'Come calcolo i metri quadrati delle pareti di un bagno?',
+    a: 'Moltiplica il perimetro della stanza per l’altezza fino a cui vuoi piastrellare, poi sottrai porte, finestre e superfici non rivestite (per esempio dietro la vasca). Esempio: bagno 2,5 × 2 m piastrellato fino a 2,20 m → 2 × (2,5 + 2) × 2,20 = 19,8 m², meno la porta (0,8 × 2,1 = 1,68 m²) = 18,1 m².',
+  },
+  {
+    q: 'Le fughe cambiano il numero di piastrelle da comprare?',
+    a: 'Di poco. Con fughe di 2–3 mm e piastrelle da 30 cm in su, lo spazio occupato dalle fughe è inferiore all’1–2% e rientra ampiamente nel margine di scarto. Conta di più con i formati piccoli, come i mosaici, dove le fughe possono valere diversi punti percentuali.',
+  },
+  {
+    q: 'Perché la posa in diagonale richiede più piastrelle?',
+    a: 'Nella posa a 45° tutte le piastrelle lungo le pareti vanno tagliate in diagonale e i ritagli sono spesso troppo piccoli per essere riutilizzati. Per questo lo scarto passa dal 10% circa della posa dritta al 15% o più.',
+  },
+  {
+    q: 'Posso restituire le scatole che avanzano?',
+    a: 'Dipende dal negozio: molti accettano la restituzione di scatole integre e non aperte entro un certo periodo, ma non è un obbligo. Chiedi le condizioni prima dell’acquisto e conserva sempre una o due scatole per le riparazioni future.',
+  },
+];
+---
+<CalculatorLayout
+  calc="piastrelle"
+  title="Calcolo piastrelle: quante scatole comprare? | HomeCost"
+  description="Calcola quante piastrelle e quante scatole servono per pavimenti e rivestimenti, con lo scarto giusto per posa dritta o diagonale. Gratis e immediato."
+  h1="Calcolo piastrelle: quante ne servono e quante scatole comprare"
+  lead="Inserisci la superficie, il formato delle piastrelle e i m² per scatola: ottieni numero di pezzi e scatole, scarto incluso."
+  faq={faq}
+  copyTitle="Calcolo piastrelle"
+>
+  <fieldset class="choices" style="margin-bottom:14px">
+    <legend class="sr-only">Come vuoi indicare la superficie?</legend>
+    <label class="choice"><input type="radio" name="modo" value="m2" checked /><span>Superficie in m²</span></label>
+    <label class="choice"><input type="radio" name="modo" value="misure" /><span>Lunghezza × larghezza</span></label>
+  </fieldset>
+
+  <div class="fields" data-mode="m2">
+    <Field id="superficie" label="Superficie da piastrellare" unit="m²" value={defaults.superficie} positive max={10000} full />
+  </div>
+  <div class="fields" data-mode="misure" hidden>
+    <Field id="lunghezza" label="Lunghezza" unit="m" value={5} positive max={200} />
+    <Field id="larghezza" label="Larghezza" unit="m" value={4} positive max={200} />
+  </div>
+
+  <fieldset class="form-group">
+    <legend>Piastrelle</legend>
+    <div class="fields fields--row3">
+      <Field id="latoA" label="Lato A" unit="cm" value={defaults.latoA} positive max={400} />
+      <Field id="latoB" label="Lato B" unit="cm" value={defaults.latoB} positive max={400} />
+      <Field id="m2Scatola" label="m²/scatola" unit="m²" value={defaults.m2Scatola} positive max={20} />
+    </div>
+    <p class="hint" style="margin:6px 0 0">I m² contenuti in una scatola sono scritti sull’etichetta o nella scheda prodotto.</p>
+  </fieldset>
+
+  <fieldset class="form-group">
+    <legend>Tipo di posa</legend>
+    <div class="choices">
+      <label class="choice"><input type="radio" name="posa" value="dritta" checked /><span>Dritta (scarto {TILE_WASTE.dritta}%)</span></label>
+      <label class="choice"><input type="radio" name="posa" value="diagonale" /><span>Diagonale (scarto {TILE_WASTE.diagonale}%)</span></label>
+    </div>
+    <div class="fields" style="margin-top:14px">
+      <Field id="scarto" label="Scarto" unit="%" value={defaults.scarto} max={60} hint="Puoi modificarlo: aumentalo con molti angoli o tagli." />
+    </div>
+  </fieldset>
+
+  <Fragment slot="result">
+    <p class="result-title">Risultato</p>
+    <dl class="kpis">
+      <div class="kpi kpi--main">
+        <dt>Scatole da comprare</dt>
+        <dd><span data-out="scatole">{p.text.scatole}</span><small><span data-out="m2Acquistati">{p.text.m2Acquistati}</span> in totale</small></dd>
+      </div>
+      <div class="kpi">
+        <dt>Piastrelle necessarie</dt>
+        <dd><span data-out="piastrelle">{p.text.piastrelle}</span><small>formato <span data-out="formato">{p.text.formato}</span></small></dd>
+      </div>
+    </dl>
+    <dl class="details">
+      <div><dt>Superficie netta</dt><dd data-out="superficie">{p.text.superficie}</dd></div>
+      <div><dt>Superficie con scarto (<span data-out="scarto">{p.text.scarto}</span>)</dt><dd data-out="m2ConScarto">{p.text.m2ConScarto}</dd></div>
+      <div><dt>Superficie di una piastrella</dt><dd data-out="areaPiastrella">{p.text.areaPiastrella}</dd></div>
+      <div><dt>Piastrelle per scatola</dt><dd data-out="perScatola">{p.text.perScatola}</dd></div>
+      <div><dt>Margine oltre lo scarto</dt><dd data-out="avanzo">{p.text.avanzo}</dd></div>
+    </dl>
+    <p class="result-note">Le scatole sono arrotondate per eccesso: si acquistano solo intere.</p>
+  </Fragment>
+
+  <Fragment slot="after-result">
+    <ProductBox group="piastrelle" />
+  </Fragment>
+
+  <Fragment slot="content">
+    <h2>Come si calcola il numero di piastrelle</h2>
+    <p>
+      Il calcolo parte dalla <strong>superficie da rivestire</strong> in metri quadrati. A questa si aggiunge una
+      percentuale di <strong>scarto</strong> per i tagli lungo i bordi, le rotture e le piastrelle da tenere da parte.
+      Poi si divide per la superficie di una piastrella (per sapere quanti pezzi servono) e per i m² contenuti in una
+      scatola (per sapere quante scatole comprare).
+    </p>
+    <p class="formula">
+      m² con scarto = superficie × (1 + scarto %)<br />
+      superficie piastrella = lato A (cm) × lato B (cm) ÷ 10.000<br />
+      piastrelle = m² con scarto ÷ superficie piastrella<br />
+      scatole = m² con scarto ÷ m² per scatola (arrotondato per eccesso)
+    </p>
+    <p>
+      Il numero di scatole si arrotonda sempre per eccesso, perché non si possono comprare scatole a metà. Per questo
+      i metri quadrati acquistati sono di solito un po’ più di quelli necessari: quel margine torna utile per le
+      riparazioni.
+    </p>
+
+    <h3>Posa dritta o diagonale: quanto scarto</h3>
+    <p>
+      Nella <strong>posa dritta</strong> (piastrelle parallele alle pareti) si taglia solo l’ultima fila lungo i muri e
+      basta in genere uno scarto del 10%. Nella <strong>posa diagonale</strong> quasi tutte le piastrelle perimetrali
+      vanno tagliate a 45° e lo scarto sale al 15%. Per pose particolari come la spina di pesce, l’opus incertum o i
+      formati molto grandi (120 × 120 cm e oltre) è prudente arrivare al 15–20%.
+    </p>
+
+    <h3>Stanze irregolari e rivestimenti</h3>
+    <p>
+      Se la stanza non è rettangolare, dividila in rettangoli più semplici, calcola l’area di ciascuno e sommale. Una
+      cucina a L, per esempio, può essere scomposta in un rettangolo di 5 × 4 m (20 m²) e in uno di 2 × 1,5 m (3 m²),
+      per un totale di 23 m². Togli invece le superfici che non vanno piastrellate, come la base di un camino o di un
+      mobile fisso.
+    </p>
+    <p>
+      Per i rivestimenti delle pareti (bagni, cucine) moltiplica il perimetro per l’altezza del rivestimento e sottrai
+      porte e finestre. Ricorda che i pezzi speciali, come listelli decorativi, angolari e battiscopa coordinati, si
+      acquistano a parte e non rientrano nel calcolo dei metri quadrati.
+    </p>
+
+    <h3>Il formato conta</h3>
+    <p>
+      Con i formati grandi (da 60 × 120 cm in su) ogni taglio sbagliato costa caro e i ritagli sono meno riutilizzabili:
+      meglio stare larghi con lo scarto. Con i formati piccoli, invece, i tagli sono più semplici ma servono molte più
+      fughe e più tempo di posa.
+    </p>
+
+    <h2>Esempio pratico passo passo</h2>
+    <p>
+      Devi piastrellare il pavimento di una cucina di 4,50 × 3,80 m con piastrelle 60 × 60 cm, vendute in scatole da
+      1,44 m² (4 pezzi). Scegli una posa dritta con il 10% di scarto.
+    </p>
+    <ol class="steps">
+      <li><strong>Superficie:</strong> 4,50 × 3,80 = 17,10 m².</li>
+      <li><strong>Con lo scarto:</strong> 17,10 × 1,10 = 18,81 m².</li>
+      <li><strong>Superficie di una piastrella:</strong> 60 × 60 ÷ 10.000 = 0,36 m².</li>
+      <li><strong>Numero di piastrelle:</strong> 18,81 ÷ 0,36 = 52,25 → 53 piastrelle.</li>
+      <li><strong>Numero di scatole:</strong> 18,81 ÷ 1,44 = 13,06 → 14 scatole.</li>
+      <li><strong>Totale acquistato:</strong> 14 × 1,44 = 20,16 m², cioè 56 piastrelle.</li>
+    </ol>
+    <p>
+      Nota come basti superare di poco un multiplo (13,06 scatole) per doverne comprare una in più: se il budget è
+      stretto, verifica se lo scarto può essere ridotto, ma senza scendere sotto il 5–7% nemmeno nei casi più semplici.
+    </p>
+
+    <h2>Errori comuni da evitare</h2>
+    <ul>
+      <li>
+        <strong>Dimenticare lo scarto.</strong> Senza margine rischi di restare senza piastrelle a lavoro quasi finito,
+        magari quando quel lotto non è più disponibile.
+      </li>
+      <li>
+        <strong>Confondere centimetri e metri.</strong> I lati delle piastrelle vanno in centimetri, la superficie in
+        metri quadrati: 60 × 60 cm sono 0,36 m², non 36.
+      </li>
+      <li>
+        <strong>Comprare lotti diversi.</strong> Tonalità e calibro possono cambiare da un lotto all’altro: acquista tutto
+        insieme e controlla che il codice lotto sulle scatole sia lo stesso.
+      </li>
+      <li>
+        <strong>Non sottrarre le superfici non piastrellate.</strong> Per i rivestimenti togli porte, finestre e le zone
+        coperte da vasca, piatto doccia o mobili fissi.
+      </li>
+      <li>
+        <strong>Ignorare il battiscopa.</strong> Se lo realizzi con le stesse piastrelle tagliate a strisce, calcola
+        qualche scatola in più oppure acquista il battiscopa coordinato.
+      </li>
+    </ul>
+    <p>
+      Stai valutando un pavimento in legno? Confronta con il <a href="/calcolo-parquet/">calcolatore del parquet</a>. Se
+      poi rinnovi anche le pareti, stima la quantità di vernice con il <a href="/calcolo-pittura/">calcolo pittura</a>.
+    </p>
+  </Fragment>
+</CalculatorLayout>
+
+<script>
+  import { initCalculator, radioValue, setField } from '../scripts/calc-engine.ts';
+  import { calcPiastrelle, presentPiastrelle, summaryPiastrelle, TILE_WASTE } from '../lib/calc/piastrelle.ts';
+  import { int } from '../lib/format.ts';
+
+  const ctrl = initCalculator({
+    read: (v, form) => ({
+      superficie: radioValue(form, 'modo') === 'misure' ? v.lunghezza! * v.larghezza! : v.superficie!,
+      latoA: v.latoA!,
+      latoB: v.latoB!,
+      m2Scatola: v.m2Scatola!,
+      scarto: v.scarto!,
+    }),
+    compute: calcPiastrelle,
+    present: presentPiastrelle,
+    summary: summaryPiastrelle,
+    announce: (_i, r) => `Servono ${int(r.piastrelle)} piastrelle, pari a ${int(r.scatole)} scatole.`,
+  });
+
+  if (ctrl) {
+    const { form } = ctrl;
+    form.querySelectorAll<HTMLInputElement>('input[name="modo"]').forEach((radio) =>
+      radio.addEventListener('change', () => {
+        const mode = radioValue(form, 'modo');
+        form.querySelectorAll<HTMLElement>('[data-mode]').forEach((el) => (el.hidden = el.dataset.mode !== mode));
+      }),
+    );
+    form.querySelectorAll<HTMLInputElement>('input[name="posa"]').forEach((radio) =>
+      radio.addEventListener('change', () => {
+        const posa = radioValue(form, 'posa') as keyof typeof TILE_WASTE;
+        setField(form, 'scarto', TILE_WASTE[posa]);
+      }),
+    );
+  }
+</script>

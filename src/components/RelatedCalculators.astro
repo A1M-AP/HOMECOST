@@ -1,0 +1,15 @@
+---
+import CalcTile from './CalcTile.astro';
+import { getCalculator, type CalculatorId } from '../config/calculators';
+
+interface Props {
+  ids: CalculatorId[];
+}
+const calcs = Astro.props.ids.map(getCalculator);
+---
+<section class="related" aria-labelledby="related-title">
+  <h2 id="related-title">Altri calcolatori utili</h2>
+  <ul class="calc-grid">
+    {calcs.map((c) => <li><CalcTile calc={c} /></li>)}
+  </ul>
+</section>

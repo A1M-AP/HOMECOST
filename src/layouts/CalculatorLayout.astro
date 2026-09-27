@@ -1,0 +1,136 @@
+---
+/**
+ * Layout delle pagine calcolatore:
+ * titolo → calcolatore (form + risultato) → pubblicità → affiliazione → testo → FAQ → correlati.
+ *
+ * Slot: default = campi del form, "result" = riquadro risultato,
+ * "after-result" = box affiliazione/prodotti, "content" = articolo SEO, "extra" = dopo il calcolatore.
+ */
+import BaseLayout from './BaseLayout.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Disclaimer from '../components/Disclaimer.astro';
+import AdSlot from '../components/AdSlot.astro';
+import FAQ, { type FaqItem } from '../components/FAQ.astro';
+import RelatedCalculators from '../components/RelatedCalculators.astro';
+import Icon from '../components/Icon.astro';
+import { SITE } from '../config/site';
+import { CALCULATORS, getCalculator, type CalculatorId } from '../config/calculators';
+
+interface Props {
+  calc: CalculatorId;
+  /** <title> della pagina. */
+  title: string;
+  description: string;
+  h1: string;
+  lead: string;
+  faq: FaqItem[];
+  /** Nome breve del calcolo, usato nel testo copiato. */
+  copyTitle?: string;
+  /** Se presente, il risultato parte "in attesa" con questo messaggio (nessun risultato iniziale). */
+  initialMessage?: string;
+}
+
+const { calc: calcId, title, description, h1, lead, faq, copyTitle, initialMessage } = Astro.props;
+const calc = getCalculator(calcId);
+const url = new URL(calc.path, SITE.url).href;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: calc.name,
+    url,
+    description,
+    applicationCategory: 'UtilitiesApplication',
+    operatingSystem: 'Tutti (browser web)',
+    inLanguage: 'it-IT',
+    isAccessibleForFree: true,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+    publisher: { '@type': 'Organization', name: SITE.name, url: SITE.url },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE.url}/` },
+      { '@type': 'ListItem', position: 2, name: calc.name, item: url },
+    ],
+  },
+];
+
+const today = new Intl.DateTimeFormat('it-IT', { dateStyle: 'long' }).format(new Date());
+---
+<BaseLayout title={title} description={description} jsonLd={jsonLd}>
+  <div class="container">
+    <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: calc.name, path: calc.path }]} />
+    <div class="layout-calc">
+      <div class="calc-main">
+        <header class="page-head">
+          <h1>{h1}</h1>
+          <p class="lead">{lead}</p>
+        </header>
+
+        <section
+          class="calc-card"
+          aria-label={`Calcolatore: ${calc.name}`}
+          data-calculator={calc.id}
+          data-copy-title={copyTitle ?? calc.name}
+          data-url={url}
+        >
+          <p class="print-only">{SITE.name} – {calc.name} – {url} – stampato il <span data-print-date>{today}</span></p>
+          <form class="calc-form" novalidate autocomplete="off">
+            <slot />
+            <!-- Il risultato si aggiorna da solo: il pulsante compare solo navigando da tastiera -->
+            <button type="submit" class="btn btn-primary btn-sm calc-submit">Vai al risultato</button>
+          </form>
+          <div class:list={['result', { 'is-stale': !!initialMessage }]} data-result tabindex="-1">
+            <div class="result-body">
+              <slot name="result" />
+            </div>
+            <p class="result-stale-msg" aria-hidden="true" data-stale-text>
+              {initialMessage ?? 'Correggi i campi evidenziati per vedere il risultato.'}
+            </p>
+            <div class="result-actions no-print">
+              <button type="button" class="btn btn-primary btn-sm" data-action="copy">
+                <Icon name="copy" /> Copia risultato
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" data-action="print">
+                <Icon name="print" /> Stampa
+              </button>
+              <span class="copy-status" data-copy-status role="status"></span>
+            </div>
+            <p class="sr-only" aria-live="polite" data-live></p>
+          </div>
+          <Disclaimer />
+        </section>
+
+        <slot name="extra" />
+        <AdSlot placement="result" />
+        <slot name="after-result" />
+
+        <article class="prose">
+          <slot name="content" />
+        </article>
+
+        <FAQ items={faq} />
+        <RelatedCalculators ids={calc.related} />
+      </div>
+
+      <aside class="calc-side" aria-label="Pubblicità e altri calcolatori">
+        <AdSlot placement="sidebar" />
+        <nav class="side-links" aria-labelledby="side-title">
+          <h2 id="side-title">Tutti i calcolatori</h2>
+          <ul>
+            {
+              CALCULATORS.filter((c) => c.id !== calc.id).map((c) => (
+                <li>
+                  <a href={c.path}>{c.name}</a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </div>
+</BaseLayout>

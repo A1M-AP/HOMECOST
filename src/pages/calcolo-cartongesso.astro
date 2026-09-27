@@ -1,0 +1,265 @@
+---
+import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Field from '../components/Field.astro';
+import ProductBox from '../components/ProductBox.astro';
+import { BOARD_HEIGHTS, calcCartongesso, presentCartongesso, type CartongessoInput } from '../lib/calc/cartongesso';
+import { fmt } from '../lib/format';
+
+const defaults: CartongessoInput = {
+  lunghezza: 4,
+  altezza: 2.7,
+  lati: 2,
+  strati: 1,
+  altezzaLastra: 3,
+  interasse: 60,
+  aperture: 0,
+  scarto: 10,
+};
+const outcome = calcCartongesso(defaults);
+if (!outcome.ok) throw new Error('Valori predefiniti non validi');
+const p = presentCartongesso(defaults, outcome.result);
+
+const faq = [
+  {
+    q: 'Quante viti servono per una lastra di cartongesso?',
+    a: 'Con montanti ogni 60 cm e viti ogni 25 cm circa lungo ciascun profilo, una lastra da 120 × 300 cm richiede indicativamente 40–55 viti. Nella doppia lastra, lo strato interno si fissa con meno viti (più distanziate) e quello a vista con il passo normale. Il calcolatore usa una media di 15 viti per m² per la lastra a vista e 8 per quella sottostante.',
+  },
+  {
+    q: 'Meglio montanti ogni 40 o ogni 60 cm?',
+    a: 'L’interasse di 60 cm è lo standard per le pareti divisorie con lastre da 12,5 mm. Si scende a 40 cm quando la parete deve reggere carichi importanti (pensili, sanitari sospesi), quando va rivestita con piastrelle o se si usano lastre più sottili. Segui sempre le indicazioni del sistema che acquisti.',
+  },
+  {
+    q: 'Lastra singola o doppia lastra per lato?',
+    a: 'La lastra singola è sufficiente per molte pareti divisorie interne. La doppia lastra rende la parete più rigida e resistente agli urti, migliora l’isolamento acustico e la resistenza al fuoco e permette di appendere carichi più pesanti; costa di più e richiede il doppio delle lastre.',
+  },
+  {
+    q: 'Che lastre usare in bagno e in cucina?',
+    a: 'Negli ambienti umidi si usano lastre idrorepellenti, riconoscibili perché di solito verdi e classificate di tipo H secondo la norma EN 520. Nelle zone doccia vanno comunque protette con una guaina impermeabilizzante prima di posare le piastrelle.',
+  },
+  {
+    q: 'Guide e montanti: che misura scegliere?',
+    a: 'I profili più comuni sono larghi 50, 75 o 100 mm e guide e montanti devono avere la stessa larghezza. Lo spessore finale della parete è dato dal profilo più le lastre: per esempio 75 mm + 12,5 mm per lato = 100 mm. Profili più larghi rendono la parete più rigida e lasciano più spazio per isolante e impianti.',
+  },
+  {
+    q: 'Serve l’isolante dentro la parete in cartongesso?',
+    a: 'Non è obbligatorio, ma è molto consigliato: un pannello di lana minerale tra i montanti migliora in modo evidente l’isolamento acustico tra le stanze. Nelle contropareti sui muri esterni l’isolante serve anche per il comfort termico, valutando con un tecnico la necessità di una barriera al vapore.',
+  },
+];
+---
+<CalculatorLayout
+  calc="cartongesso"
+  title="Calcolo cartongesso: lastre, guide, montanti e viti | HomeCost"
+  description="Stima gratis i materiali per una parete o controparete in cartongesso: numero di lastre, metri di guide a U, montanti a C e viti, con margine di scarto."
+  h1="Calcolo cartongesso: lastre e profili per la tua parete"
+  lead="Inserisci le misure della parete e il tipo di rivestimento: stimiamo lastre, guide a U, montanti a C e viti necessari."
+  faq={faq}
+  copyTitle="Calcolo cartongesso"
+>
+  <div class="fields">
+    <Field id="lunghezza" label="Lunghezza parete" unit="m" value={defaults.lunghezza} positive max={100} />
+    <Field id="altezza" label="Altezza parete" unit="m" value={defaults.altezza} positive max={10} />
+  </div>
+
+  <fieldset class="form-group">
+    <legend>Tipo di parete</legend>
+    <div class="choices">
+      <label class="choice"><input type="radio" name="lati" value="2" checked /><span>Parete divisoria (2 lati)</span></label>
+      <label class="choice"><input type="radio" name="lati" value="1" /><span>Controparete (1 lato)</span></label>
+    </div>
+  </fieldset>
+
+  <fieldset class="form-group">
+    <legend>Rivestimento</legend>
+    <div class="choices">
+      <label class="choice"><input type="radio" name="strati" value="1" checked /><span>Lastra singola per lato</span></label>
+      <label class="choice"><input type="radio" name="strati" value="2" /><span>Doppia lastra per lato</span></label>
+    </div>
+  </fieldset>
+
+  <fieldset class="form-group">
+    <legend>Lastre e profili</legend>
+    <div class="fields">
+      <div class="field">
+        <label for="formato">Formato lastra</label>
+        <select id="formato" name="formato">
+          {BOARD_HEIGHTS.map((h) => <option value={h} selected={h === defaults.altezzaLastra}>120 × {fmt(h * 100, 0)} cm</option>)}
+        </select>
+      </div>
+      <Field id="interasse" label="Interasse montanti" unit="cm" value={defaults.interasse} min={20} max={100} positive />
+      <Field
+        id="aperture"
+        label="Aperture"
+        unit="m²"
+        optional
+        max={500}
+        placeholder="0"
+        hint="Facoltativo: porte o vani da escludere."
+      />
+      <Field id="scarto" label="Margine di scarto" unit="%" value={defaults.scarto} max={50} />
+    </div>
+  </fieldset>
+
+  <Fragment slot="result">
+    <p class="result-title">Stima dei materiali</p>
+    <dl class="kpis">
+      <div class="kpi kpi--main">
+        <dt>Lastre</dt>
+        <dd><span data-out="lastre">{p.text.lastre}</span><small>formato <span data-out="formato">{p.text.formato}</span></small></dd>
+      </div>
+      <div class="kpi">
+        <dt>Montanti a C</dt>
+        <dd><span data-out="montanti">{p.text.montanti}</span><small>da <span data-out="montanteAltezza">{p.text.montanteAltezza}</span></small></dd>
+      </div>
+    </dl>
+    <dl class="details">
+      <div><dt>Guide a U (pavimento e soffitto)</dt><dd><span data-out="guideMetri">{p.text.guideMetri}</span></dd></div>
+      <div><dt>Guide da acquistare</dt><dd data-out="guideBarre">{p.text.guideBarre}</dd></div>
+      <div><dt>Montanti, metri totali</dt><dd data-out="montantiMetri">{p.text.montantiMetri}</dd></div>
+      <div><dt>Viti per le lastre</dt><dd data-out="viti">{p.text.viti}</dd></div>
+      <div><dt>Tasselli per le guide</dt><dd data-out="tasselli">{p.text.tasselli}</dd></div>
+      <div><dt>Superficie della parete</dt><dd data-out="areaParete">{p.text.areaParete}</dd></div>
+      <div><dt>Superficie di lastre posate</dt><dd data-out="areaRivestita">{p.text.areaRivestita}</dd></div>
+    </dl>
+    <p class="callout callout--info" data-show="lastraPiuAlta" hidden={!p.flags?.lastraPiuAlta}>
+      La lastra è più alta della parete: eviti giunti orizzontali, ma il pezzo tagliato in cima di solito non si
+      riutilizza. Lo sfrido è già considerato nel numero di lastre.
+    </p>
+    <p class="callout callout--info" data-show="lastraPiuBassa" hidden={!p.flags?.lastraPiuBassa}>
+      La lastra è più bassa della parete: servono giunti orizzontali, da sfalsare tra una lastra e l’altra.
+    </p>
+    <p class="callout callout--warn" data-show="montantiOltreBarra" hidden={!p.flags?.montantiOltreBarra}>
+      La parete supera i 3 m: servono montanti più lunghi (esistono anche da 4 m) oppure profili giuntati secondo le
+      indicazioni del produttore.
+    </p>
+    <p class="callout callout--warn">
+      <strong>È una stima indicativa.</strong> Quantità e passo delle viti dipendono dal sistema scelto (profili da 50,
+      75 o 100 mm, tipo di lastra). Per pareti con requisiti acustici, antincendio o in ambienti umidi segui le schede
+      tecniche del produttore.
+    </p>
+  </Fragment>
+
+  <Fragment slot="after-result">
+    <ProductBox group="cartongesso" />
+  </Fragment>
+
+  <Fragment slot="content">
+    <h2>Come si calcolano i materiali per il cartongesso</h2>
+    <p>
+      Una parete in cartongesso è formata da un’<strong>orditura metallica</strong> e da <strong>lastre</strong> di gesso
+      rivestito avvitate sopra. L’orditura comprende le <strong>guide a U</strong>, fissate a pavimento e soffitto, e i
+      <strong>montanti a C</strong>, verticali, inseriti nelle guide a distanza regolare (l’interasse, di solito 60 cm).
+      Il calcolatore stima ogni componente con queste regole:
+    </p>
+    <p class="formula">
+      lastre = superficie ÷ (1,20 × altezza utile della lastra) × lati × strati × (1 + scarto)<br />
+      guide a U = 2 × lunghezza × (1 + scarto)<br />
+      montanti a C = (lunghezza ÷ interasse, per eccesso) + 1, più lo scarto<br />
+      viti ≈ 15 per m² di lastra a vista (+ 8 per m² per la lastra sottostante)
+    </p>
+    <p>
+      L’“altezza utile” è l’altezza della lastra, ma non più di quella della parete: se usi lastre da 3 m su una
+      parete alta 2,70 m, ogni lastra copre 1,20 × 2,70 m e il pezzo tagliato in cima diventa sfrido. Per questo è
+      importante scegliere il formato più vicino all’altezza reale.
+    </p>
+
+    <h2>Esempio pratico passo passo</h2>
+    <p>
+      Vuoi dividere una stanza con una parete lunga 4 m e alta 2,70 m, con una lastra per lato, lastre da 120 × 300 cm
+      e montanti ogni 60 cm. Aggiungi il 10% di scarto.
+    </p>
+    <ol class="steps">
+      <li><strong>Superficie della parete:</strong> 4 × 2,70 = 10,8 m².</li>
+      <li>
+        <strong>Lastre:</strong> ogni lastra copre 1,20 × 2,70 = 3,24 m², quindi 10,8 ÷ 3,24 = 3,33 lastre per lato;
+        per due lati 6,67, con lo scarto 7,33 → <strong>8 lastre</strong>.
+      </li>
+      <li><strong>Guide a U:</strong> 2 × 4 = 8 m, con lo scarto 8,8 m → 3 guide da 3 m.</li>
+      <li>
+        <strong>Montanti a C:</strong> 4 m ÷ 0,60 = 6,67 → 7 campate, quindi 8 montanti; con lo scarto
+        <strong>9 montanti</strong> alti 2,70 m.
+      </li>
+      <li><strong>Viti:</strong> 10,8 m² × 2 lati × 15 = 324, con lo scarto circa 360 viti.</li>
+      <li><strong>Tasselli:</strong> uno ogni 50 cm lungo 8 m di guide, più quelli alle estremità: circa 18.</li>
+    </ol>
+    <p>
+      A questi materiali vanno aggiunti nastro per i giunti, stucco, eventuale isolante in lana minerale e i paraspigoli
+      per gli angoli esterni.
+    </p>
+
+    <h2>Quali lastre scegliere</h2>
+    <p>
+      Le lastre in gesso rivestito sono classificate dalla norma europea EN 520 con delle lettere che ne indicano le
+      prestazioni. Le più diffuse sono:
+    </p>
+    <ul>
+      <li><strong>Tipo A:</strong> lastre standard, di solito spesse 12,5 mm, per pareti e contropareti in ambienti asciutti.</li>
+      <li><strong>Tipo H:</strong> lastre idrorepellenti, riconoscibili dal colore verde, per bagni, cucine e lavanderie.</li>
+      <li><strong>Tipo F:</strong> lastre con migliore resistenza al fuoco, spesso di colore rosa.</li>
+      <li><strong>Tipo D:</strong> lastre ad alta densità, utili per migliorare l’isolamento acustico e la resistenza agli urti.</li>
+    </ul>
+    <p>
+      Il formato si sceglie in base all’altezza della parete: 120 × 300 cm è il più comune per le altezze residenziali
+      tra 2,70 e 3 m, mentre 120 × 200 e 120 × 250 cm sono più comodi da trasportare e da maneggiare da soli.
+    </p>
+
+    <h3>Materiali da non dimenticare</h3>
+    <ul>
+      <li>nastro monoadesivo sotto guide e montanti perimetrali, per ridurre la trasmissione del rumore;</li>
+      <li>nastro in carta o in rete per i giunti e stucco specifico per cartongesso;</li>
+      <li>paraspigoli metallici per gli angoli esterni;</li>
+      <li>pannelli isolanti in lana minerale da inserire tra i montanti;</li>
+      <li>rinforzi in legno o profili aggiuntivi dove appenderai carichi pesanti.</li>
+    </ul>
+
+    <h2>Errori comuni da evitare</h2>
+    <ul>
+      <li>
+        <strong>Contare un solo lato.</strong> Una parete divisoria si riveste su entrambi i lati: le lastre raddoppiano.
+        Solo la controparete, addossata a un muro esistente, ha un lato.
+      </li>
+      <li>
+        <strong>Scegliere il formato sbagliato.</strong> Lastre molto più alte della parete generano sfridi; lastre più
+        basse richiedono giunti orizzontali e più lavoro di stuccatura.
+      </li>
+      <li>
+        <strong>Dimenticare il montante finale.</strong> I montanti sono uno in più delle campate: su 4 m con interasse
+        60 cm ne servono 8, non 7.
+      </li>
+      <li>
+        <strong>Usare lastre standard in bagno.</strong> Negli ambienti umidi servono lastre idrorepellenti e, nelle zone
+        doccia, una guaina impermeabilizzante.
+      </li>
+      <li>
+        <strong>Non prevedere rinforzi.</strong> Dove appenderai pensili, sanitari o TV servono montanti più fitti o
+        rinforzi interni, da decidere prima di chiudere la parete.
+      </li>
+    </ul>
+    <p>
+      Finita la parete, calcola la vernice necessaria con il <a href="/calcolo-pittura/">calcolo pittura</a> oppure le
+      piastrelle per il rivestimento con il <a href="/calcolo-piastrelle/">calcolatore delle piastrelle</a>.
+    </p>
+  </Fragment>
+</CalculatorLayout>
+
+<script>
+  import { initCalculator, radioValue, selectValue } from '../scripts/calc-engine.ts';
+  import { calcCartongesso, presentCartongesso, summaryCartongesso } from '../lib/calc/cartongesso.ts';
+  import { int } from '../lib/format.ts';
+
+  initCalculator({
+    read: (v, form) => ({
+      lunghezza: v.lunghezza!,
+      altezza: v.altezza!,
+      lati: radioValue(form, 'lati') === '1' ? 1 : 2,
+      strati: radioValue(form, 'strati') === '2' ? 2 : 1,
+      altezzaLastra: Number(selectValue(form, 'formato')) || 3,
+      interasse: v.interasse!,
+      aperture: v.aperture ?? 0,
+      scarto: v.scarto!,
+    }),
+    compute: calcCartongesso,
+    present: presentCartongesso,
+    summary: summaryCartongesso,
+    announce: (_i, r) => `Servono circa ${int(r.lastre)} lastre e ${int(r.montanti)} montanti.`,
+  });
+</script>

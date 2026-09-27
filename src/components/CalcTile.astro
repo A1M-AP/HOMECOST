@@ -1,0 +1,17 @@
+---
+import Icon from './Icon.astro';
+import type { CalculatorInfo } from '../config/calculators';
+
+interface Props {
+  calc: CalculatorInfo;
+  headingLevel?: 'h2' | 'h3';
+}
+const { calc, headingLevel = 'h3' } = Astro.props;
+const Heading = headingLevel;
+---
+<article class="calc-tile">
+  <span class="tile-icon"><Icon name={calc.icon} /></span>
+  <Heading><a href={calc.path}>{calc.name}</a></Heading>
+  <p>{calc.summary}</p>
+  <span class="more" aria-hidden="true">Calcola ora →</span>
+</article>

@@ -1,0 +1,47 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import { CALCULATORS } from '../config/calculators';
+import { SITE } from '../config/site';
+---
+<PageLayout
+  title="Chi siamo | HomeCost"
+  description="HomeCost realizza calcolatori gratuiti per casa ed energia: strumenti semplici, verificabili e pensati per chi vuole spendere meglio."
+  h1="Chi siamo"
+>
+  <p>
+    <strong>HomeCost</strong> nasce da una domanda semplice: <em>quanto costa davvero?</em> Quanto pesa il condizionatore
+    in bolletta, quanti barattoli di pittura servono per la camera, di quanto aumenta l’affitto con l’ISTAT. Sono calcoli
+    che tutti prima o poi devono fare, spesso di fretta, davanti allo scaffale di un negozio o a una bolletta.
+  </p>
+  <p>
+    Per questo realizziamo calcolatori gratuiti, veloci e senza registrazione, con un linguaggio chiaro e senza gergo
+    tecnico. Ogni strumento mostra le formule usate e un esempio svolto passo passo, così puoi verificare il risultato e
+    capire da dove arriva.
+  </p>
+
+  <h2>Come lavoriamo</h2>
+  <ul>
+    <li><strong>Formule trasparenti:</strong> sotto ogni calcolatore trovi la spiegazione completa del metodo.</li>
+    <li><strong>Valori realistici:</strong> potenze, rese e scarti proposti sono medie indicative, sempre modificabili.</li>
+    <li><strong>Fonti ufficiali:</strong> per l’aggiornamento degli affitti usiamo gli indici FOI pubblicati dall’ISTAT.</li>
+    <li><strong>Privacy:</strong> i calcoli avvengono nel tuo browser e i dati che inserisci non vengono inviati a nessuno.</li>
+  </ul>
+
+  <h2>Come si sostiene HomeCost</h2>
+  <p>
+    I calcolatori sono e resteranno gratuiti. Il sito si sostiene con spazi pubblicitari e link di affiliazione: se
+    acquisti un prodotto o attivi un servizio tramite alcuni link, possiamo ricevere una commissione, senza costi
+    aggiuntivi per te. I link affiliati sono sempre segnalati e non influenzano i risultati dei calcoli.
+  </p>
+
+  <h2>I nostri calcolatori</h2>
+  <ul>
+    {CALCULATORS.map((c) => <li><a href={c.path}>{c.name}</a></li>)}
+  </ul>
+
+  <h2>Scrivici</h2>
+  <p>
+    Hai trovato un errore o vorresti un nuovo calcolatore? Scrivici a <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
+    oppure visita la pagina <a href="/contatti/">Contatti</a>.
+  </p>
+</PageLayout>

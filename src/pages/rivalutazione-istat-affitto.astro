@@ -1,0 +1,565 @@
+---
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Field from '../components/Field.astro';
+import AffiliateBox from '../components/AffiliateBox.astro';
+import Icon from '../components/Icon.astro';
+import {
+  CONTRACT_LABELS,
+  MONTHS,
+  computeIstat,
+  describeData,
+  parseIstatData,
+  presentIstat,
+  type IstatInput,
+} from '../lib/calc/istat';
+
+// Gli indici vengono letti anche in fase di build per mostrare lo stato dell'archivio
+// e, se i dati ci sono, un risultato iniziale. Nel browser il file viene caricato con fetch.
+const data = parseIstatData(JSON.parse(readFileSync(join(process.cwd(), 'public/data/istat-foi.json'), 'utf8')));
+const hasData = data.ultimoMese !== null;
+
+const now = new Date();
+const defaults: IstatInput = {
+  canone: 800,
+  tipo: 'libero',
+  inizioMese: now.getMonth() + 1,
+  inizioAnno: now.getFullYear() - 3,
+  aggMese: now.getMonth() + 1,
+  aggAnno: now.getFullYear(),
+  anticipo: 1,
+  percentuale: 75,
+  cedolare: false,
+  variazioneManuale: null,
+};
+
+const initial = hasData ? computeIstat(defaults, data.indici) : null;
+const p = initial?.ok ? presentIstat(defaults, initial.result) : null;
+const dash = '—';
+const out = (key: string) => p?.text[key] ?? dash;
+const initialMessage = p
+  ? undefined
+  : initial && !initial.ok
+    ? Object.values(initial.errors)[0]
+    : 'Inserisci la variazione ISTAT per vedere il nuovo canone.';
+
+const monthLabel = (m: string) => m.charAt(0).toUpperCase() + m.slice(1);
+const contractTypes = Object.entries(CONTRACT_LABELS) as [keyof typeof CONTRACT_LABELS, string][];
+
+const faq = [
+  {
+    q: 'Che cos’è l’indice FOI e perché si usa per gli affitti?',
+    a: 'Il FOI è l’indice ISTAT dei prezzi al consumo per le famiglie di operai e impiegati. Per aggiornare canoni e altri valori monetari si usa la versione “senza tabacchi”, come previsto dalla legge 81/1992. L’aggiornamento si basa sulla variazione dell’indice tra lo stesso mese di due anni consecutivi.',
+  },
+  {
+    q: 'Si applica il 75% o il 100% della variazione ISTAT?',
+    a: 'Dipende dal contratto e dal tipo di locazione. Nei contratti abitativi a canone libero (4+4) le parti possono concordare anche il 100%. Nei contratti a canone concordato il contratto tipo prevede un aggiornamento non superiore al 75%, e per le locazioni commerciali l’art. 32 della legge 392/1978 fissa di norma il limite del 75%. Fa fede sempre quanto scritto nel contratto.',
+  },
+  {
+    q: 'Con la cedolare secca posso aggiornare il canone?',
+    a: 'No. Scegliendo la cedolare secca il locatore rinuncia, per tutto il periodo dell’opzione, a chiedere qualsiasi aggiornamento del canone, compreso quello ISTAT, anche se il contratto lo prevede (art. 3, comma 11, D.Lgs. 23/2011). La rinuncia va comunicata al conduttore con raccomandata.',
+  },
+  {
+    q: 'L’aggiornamento ISTAT è automatico?',
+    a: 'Solo se il contratto lo prevede. Di solito il locatore deve comunicare l’aggiornamento al conduttore per iscritto, con raccomandata A/R o PEC, indicando la variazione ISTAT e il nuovo importo. Per le locazioni commerciali l’aggiornamento è dovuto su richiesta del locatore.',
+  },
+  {
+    q: 'Se la variazione ISTAT è negativa il canone diminuisce?',
+    a: 'Dipende dalla clausola del contratto. Se prevede l’adeguamento alle variazioni “in aumento e in diminuzione” il canone scende; se parla solo di aumenti, in genere resta invariato. In caso di dubbio conviene chiedere a un professionista o a un’associazione di proprietari o inquilini.',
+  },
+  {
+    q: 'Posso chiedere gli aggiornamenti degli anni passati?',
+    a: 'Dipende dal contratto e dal tipo di locazione. Per le locazioni commerciali l’aggiornamento è dovuto dalla richiesta del locatore e, secondo l’orientamento prevalente, non per i periodi precedenti. Per le abitazioni conta la formulazione della clausola: prima di chiedere arretrati è bene farsi consigliare da un professionista.',
+  },
+];
+---
+<CalculatorLayout
+  calc="istat"
+  title="Rivalutazione ISTAT affitto: calcolo del nuovo canone | HomeCost"
+  description="Calcola l’aggiornamento ISTAT del canone d’affitto con l’indice FOI: variazione, 75% o 100%, aumento mensile e annuo e nuovo canone. Con lettera da scaricare."
+  h1="Rivalutazione ISTAT del canone d’affitto"
+  lead="Calcola l’aggiornamento del canone con l’indice FOI (senza tabacchi) e scarica la lettera da inviare all’inquilino."
+  faq={faq}
+  copyTitle="Rivalutazione ISTAT del canone"
+  initialMessage={initialMessage}
+>
+  <div class="fields">
+    <Field id="canone" label="Canone mensile attuale" unit="€" value={defaults.canone} positive max={1000000} full />
+    <div class="field field--full">
+      <label for="tipo">Tipo di contratto</label>
+      <select id="tipo" name="tipo" aria-describedby="tipo-hint">
+        {contractTypes.map(([value, label]) => <option value={value} selected={value === defaults.tipo}>{monthLabel(label)}</option>)}
+      </select>
+      <p class="hint" id="tipo-hint" data-tipo-hint>Le parti possono concordare il 75% o il 100% della variazione.</p>
+    </div>
+  </div>
+
+  <fieldset class="form-group">
+    <legend>Decorrenza del contratto</legend>
+    <div class="fields">
+      <div class="field">
+        <label for="inizioMese">Mese</label>
+        <select id="inizioMese" name="inizioMese">
+          {MONTHS.map((m, i) => <option value={i + 1} selected={i + 1 === defaults.inizioMese}>{monthLabel(m)}</option>)}
+        </select>
+      </div>
+      <Field id="inizioAnno" label="Anno" value={defaults.inizioAnno} integer min={1978} max={2100} />
+    </div>
+  </fieldset>
+
+  <fieldset class="form-group">
+    <legend>Aggiornamento del canone</legend>
+    <div class="fields">
+      <div class="field">
+        <label for="aggMese">Mese</label>
+        <select id="aggMese" name="aggMese">
+          {MONTHS.map((m, i) => <option value={i + 1} selected={i + 1 === defaults.aggMese}>{monthLabel(m)}</option>)}
+        </select>
+      </div>
+      <Field id="aggAnno" label="Anno" value={defaults.aggAnno} integer min={1979} max={2100} />
+      <div class="field field--full">
+        <label for="anticipo">Indice di riferimento</label>
+        <select id="anticipo" name="anticipo" aria-describedby="anticipo-hint">
+          <option value="1" selected>Mese precedente (il più usato)</option>
+          <option value="2">Due mesi prima</option>
+          <option value="0">Stesso mese dell’aggiornamento</option>
+        </select>
+        <p class="hint" id="anticipo-hint">
+          Mese dell’indice rispetto a quello dell’aggiornamento: lo confrontiamo con lo stesso mese dell’anno
+          precedente. Usa quello indicato nel contratto.
+        </p>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset class="form-group">
+    <legend>Variazione ISTAT</legend>
+    <p class="data-status" data-istat-status>{describeData(data)}</p>
+    <div class="choices">
+      <label class="choice"><input type="radio" name="fonte" value="indici" checked={hasData} /><span>Calcolala dagli indici FOI</span></label>
+      <label class="choice"><input type="radio" name="fonte" value="manuale" checked={!hasData} /><span>Inserisco io la variazione</span></label>
+    </div>
+    <div class="fields" data-fonte="manuale" hidden={hasData} style="margin-top:14px">
+      <Field
+        id="variazione"
+        label="Variazione ISTAT FOI annua"
+        unit="%"
+        min={-20}
+        max={30}
+        placeholder="es. 1,5"
+        full
+        hint="Variazione percentuale dell’indice FOI senza tabacchi rispetto allo stesso mese dell’anno prima, come pubblicata dall’ISTAT."
+      />
+    </div>
+  </fieldset>
+
+  <fieldset class="form-group">
+    <legend>Percentuale della variazione da applicare</legend>
+    <div class="choices">
+      <label class="choice"><input type="radio" name="percentuale" value="75" checked /><span>75%</span></label>
+      <label class="choice"><input type="radio" name="percentuale" value="100" /><span>100%</span></label>
+    </div>
+  </fieldset>
+
+  <fieldset class="form-group">
+    <legend>Il locatore ha scelto la cedolare secca?</legend>
+    <div class="choices">
+      <label class="choice"><input type="radio" name="cedolare" value="no" checked /><span>No</span></label>
+      <label class="choice"><input type="radio" name="cedolare" value="si" /><span>Sì</span></label>
+    </div>
+  </fieldset>
+
+  <Fragment slot="result">
+    <p class="result-title">Risultato</p>
+    <dl class="kpis">
+      <div class="kpi kpi--main">
+        <dt>Nuovo canone</dt>
+        <dd><span data-out="nuovoCanone">{out('nuovoCanone')}</span><small data-out="nuovoCanoneNota">{out('nuovoCanoneNota')}</small></dd>
+      </div>
+      <div class="kpi">
+        <dt>Aumento mensile</dt>
+        <dd><span data-out="aumentoMensile">{out('aumentoMensile')}</span><small data-out="aumentoNota">{out('aumentoNota')}</small></dd>
+      </div>
+    </dl>
+    <dl class="details">
+      <div><dt>Variazione ISTAT FOI</dt><dd data-out="variazione">{out('variazione')}</dd></div>
+      <div><dt>Periodo confrontato</dt><dd data-out="periodo">{out('periodo')}</dd></div>
+      <div><dt>Indici FOI</dt><dd data-out="indici">{out('indici')}</dd></div>
+      <div><dt>Percentuale applicata</dt><dd data-out="percentuale">{out('percentuale')}</dd></div>
+      <div><dt>Variazione applicata al canone</dt><dd data-out="variazioneApplicata">{out('variazioneApplicata')}</dd></div>
+      <div><dt>Aumento annuale</dt><dd data-out="aumentoAnnuo">{out('aumentoAnnuo')}</dd></div>
+      <div><dt>Canone attuale</dt><dd data-out="canoneAttuale">{out('canoneAttuale')}</dd></div>
+      <div><dt>Nuovo canone dovuto da</dt><dd data-out="decorrenza">{out('decorrenza')}</dd></div>
+      <div><dt>Annualità del contratto</dt><dd data-out="annualita">{out('annualita')}</dd></div>
+    </dl>
+    <div class="callout callout--warn" data-show="avvisi" hidden={!p?.flags?.avvisi}>
+      <ul data-avvisi>
+        {initial?.ok && initial.result.avvisi.map((a) => <li>{a}</li>)}
+      </ul>
+    </div>
+    <p class="result-note">
+      La percentuale applicabile dipende da quanto previsto nel contratto e dalla normativa del tipo di contratto: il
+      calcolo è indicativo.
+    </p>
+  </Fragment>
+
+  <section slot="extra" class="letter" aria-labelledby="letter-title">
+    <h2 id="letter-title">Lettera di aggiornamento per il conduttore</h2>
+    <p>
+      Compila i dati (facoltativi: quelli vuoti restano tra parentesi quadre) e scarica la comunicazione, pronta da
+      firmare e inviare con raccomandata A/R o PEC. Puoi modificare il testo prima di scaricarlo.
+    </p>
+    <div class="fields" data-letter-fields>
+      <div class="field"><label for="l-locatore">Locatore (nome e cognome)</label><div class="input-wrap"><input id="l-locatore" name="locatore" type="text" autocomplete="name" /></div></div>
+      <div class="field"><label for="l-indirizzoLocatore">Indirizzo del locatore</label><div class="input-wrap"><input id="l-indirizzoLocatore" name="indirizzoLocatore" type="text" autocomplete="street-address" /></div></div>
+      <div class="field"><label for="l-conduttore">Conduttore (nome e cognome)</label><div class="input-wrap"><input id="l-conduttore" name="conduttore" type="text" autocomplete="off" /></div></div>
+      <div class="field"><label for="l-immobile">Indirizzo dell’immobile</label><div class="input-wrap"><input id="l-immobile" name="immobile" type="text" autocomplete="off" /></div></div>
+      <div class="field field--full"><label for="l-estremi">Estremi di registrazione (facoltativo)</label><div class="input-wrap"><input id="l-estremi" name="estremi" type="text" autocomplete="off" placeholder="es. registrato presso l’Agenzia delle Entrate di … il … al n. …" /></div></div>
+      <div class="field"><label for="l-luogo">Luogo</label><div class="input-wrap"><input id="l-luogo" name="luogo" type="text" autocomplete="address-level2" /></div></div>
+    </div>
+    <div class="field" style="margin-top:16px">
+      <label for="letter-text">Anteprima della lettera</label>
+      <textarea id="letter-text" class="letter-preview" spellcheck="true" data-letter-text></textarea>
+    </div>
+    <p class="callout callout--info" data-letter-edited hidden>
+      Hai modificato il testo a mano: i nuovi dati non lo sovrascrivono.
+      <button type="button" class="btn btn-outline btn-sm" data-letter-action="reset" style="margin-top:8px">Rigenera la lettera</button>
+    </p>
+    <p class="callout callout--warn" data-letter-blocked hidden></p>
+    <div class="result-actions">
+      <button type="button" class="btn btn-primary btn-sm" data-letter-action="rtf"><Icon name="download" /> Scarica per Word (.rtf)</button>
+      <button type="button" class="btn btn-outline btn-sm" data-letter-action="txt"><Icon name="download" /> Scarica testo (.txt)</button>
+      <button type="button" class="btn btn-outline btn-sm" data-letter-action="copy"><Icon name="copy" /> Copia testo</button>
+      <span class="copy-status" role="status" data-letter-status></span>
+    </div>
+  </section>
+
+  <Fragment slot="after-result">
+    <AffiliateBox id="assicurazioneCasa" />
+  </Fragment>
+
+  <Fragment slot="content">
+    <h2>Come funziona l’aggiornamento ISTAT del canone</h2>
+    <p>
+      Molti contratti di locazione prevedono che il canone venga aggiornato ogni anno in base all’inflazione, misurata
+      dall’ISTAT con l’indice dei prezzi al consumo per le famiglie di operai e impiegati, il cosiddetto
+      <strong>indice FOI</strong>, nella versione <strong>senza tabacchi</strong>. L’aggiornamento serve a mantenere nel
+      tempo il valore reale dell’affitto e di solito scatta all’anniversario del contratto.
+    </p>
+    <p>
+      Il calcolo confronta l’indice del mese di riferimento con quello dello stesso mese dell’anno precedente. Alla
+      variazione percentuale ottenuta si applica la quota prevista dal contratto, di solito il 75% o il 100%:
+    </p>
+    <p class="formula">
+      variazione ISTAT % = (indice mese di riferimento ÷ indice stesso mese anno prima − 1) × 100<br />
+      variazione applicata = variazione ISTAT × percentuale applicata (75% o 100%)<br />
+      nuovo canone = canone attuale × (1 + variazione applicata)
+    </p>
+    <p>
+      Il mese di riferimento è quello indicato nel contratto: spesso è il mese che precede l’aggiornamento, perché
+      l’ISTAT pubblica gli indici definitivi circa a metà del mese successivo. La variazione si arrotonda a un decimale,
+      come nelle tabelle ufficiali.
+    </p>
+
+    <h3>75% o 100%: cosa dice la legge</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Tipo di contratto</th><th scope="col">Aggiornamento ISTAT</th></tr></thead>
+        <tbody>
+          <tr><td>Abitativo a canone libero (4+4)</td><td>Libero accordo tra le parti: spesso 75%, ammesso anche il 100%.</td></tr>
+          <tr><td>Abitativo a canone concordato (3+2)</td><td>Nella misura prevista dal contratto, non oltre il 75% della variazione.</td></tr>
+          <tr><td>Abitativo transitorio</td><td>Solo se previsto dal contratto e dall’accordo territoriale, data la breve durata.</td></tr>
+          <tr><td>Commerciale (L. 392/1978)</td><td>Su richiesta del locatore, di norma non oltre il 75% della variazione.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Esempio pratico passo passo</h2>
+    <p>
+      Un contratto a canone libero è iniziato a settembre 2023 con un canone di 800 € al mese e prevede l’aggiornamento
+      al 75% della variazione ISTAT, calcolata sul mese precedente all’anniversario. Per l’esempio ipotizziamo una
+      variazione FOI dell’1,6% tra agosto dell’anno prima e agosto dell’anno dell’aggiornamento (valore di esempio,
+      non un dato ISTAT).
+    </p>
+    <ol class="steps">
+      <li><strong>Variazione ISTAT:</strong> +1,6%.</li>
+      <li><strong>Quota applicabile:</strong> 1,6% × 75% = +1,2%.</li>
+      <li><strong>Aumento mensile:</strong> 800 × 1,2% = 9,60 €.</li>
+      <li><strong>Nuovo canone:</strong> 800 + 9,60 = 809,60 € al mese, dovuto da settembre.</li>
+      <li><strong>Aumento annuale:</strong> 9,60 × 12 = 115,20 €.</li>
+    </ol>
+    <p>
+      L’anno successivo si ripete il calcolo partendo dal nuovo canone di 809,60 €, non da quello iniziale.
+    </p>
+
+    <h2>Cedolare secca e aggiornamento ISTAT</h2>
+    <p>
+      Con la cedolare secca il locatore paga un’imposta sostitutiva sul canone ma, in cambio, rinuncia per tutta la
+      durata dell’opzione a chiedere l’aggiornamento del canone, anche quello ISTAT e anche se previsto dal contratto
+      (art. 3, comma 11, D.Lgs. 23/2011). Se hai scelto la cedolare secca, il calcolatore mostra comunque l’aumento
+      teorico, ma il canone dovuto resta invariato e la lettera di aggiornamento non viene generata.
+    </p>
+
+    <h2>Errori comuni da evitare</h2>
+    <ul>
+      <li>
+        <strong>Usare l’indice sbagliato.</strong> Per gli affitti si usa il FOI senza tabacchi, non il NIC né l’IPCA,
+        che hanno valori e variazioni diversi.
+      </li>
+      <li>
+        <strong>Applicare il 100% quando il contratto prevede il 75%.</strong> La quota è quella scritta nel contratto e
+        consentita dalla legge per quel tipo di locazione.
+      </li>
+      <li>
+        <strong>Sbagliare il mese di riferimento.</strong> Confronta sempre lo stesso mese di due anni consecutivi,
+        quello indicato dal contratto.
+      </li>
+      <li>
+        <strong>Dimenticare la cedolare secca.</strong> Con l’opzione attiva l’aggiornamento non è dovuto.
+      </li>
+      <li>
+        <strong>Non comunicare l’aggiornamento.</strong> Invia sempre una comunicazione scritta con i conteggi: puoi
+        usare la lettera generata da questa pagina.
+      </li>
+    </ul>
+
+    <h2>Come comunicare l’aggiornamento all’inquilino</h2>
+    <p>
+      La comunicazione va fatta per iscritto, con raccomandata A/R o PEC, così da avere una prova della data di invio.
+      Nella lettera conviene indicare il contratto a cui si riferisce, la variazione ISTAT con il periodo confrontato, la
+      percentuale applicata, il nuovo importo del canone e la mensilità da cui è dovuto. Il calcolatore prepara una bozza
+      con tutti questi dati, che puoi completare e modificare prima di scaricarla.
+    </p>
+
+    <h3>Da dove arrivano gli indici</h3>
+    <p>
+      Gli indici FOI usati dal calcolatore sono tratti dalle pubblicazioni ufficiali ISTAT e aggiornati a mano ogni
+      mese. {describeData(data)} Se il mese che ti serve non è ancora disponibile, scegli “Inserisco io la variazione” e
+      usa il dato pubblicato sul <a href="https://www.istat.it/" rel="noopener" target="_blank">sito dell’ISTAT</a>.
+    </p>
+    <p>
+      Periodicamente l’ISTAT aggiorna la base di riferimento degli indici. Se i due mesi da confrontare sono espressi in
+      basi diverse, la variazione va calcolata con i coefficienti di raccordo pubblicati dall’ISTAT: in quel caso è più
+      semplice inserire direttamente la variazione percentuale ufficiale.
+    </p>
+  </Fragment>
+</CalculatorLayout>
+
+<script>
+  import { copyToClipboard, initCalculator, radioValue, selectValue } from '../scripts/calc-engine.ts';
+  import {
+    CONTRACT_DEFAULT_PERCENT,
+    buildLetter,
+    computeIstat,
+    describeData,
+    formatMonthKey,
+    parseIstatData,
+    presentIstat,
+    summaryIstat,
+    toRtf,
+    type ContractType,
+    type IstatData,
+    type IstatInput,
+    type IstatResult,
+  } from '../lib/calc/istat.ts';
+  import { euro } from '../lib/format.ts';
+
+  const TIPO_HINTS: Record<ContractType, string> = {
+    libero: 'Le parti possono concordare il 75% o il 100% della variazione.',
+    concordato: 'Il contratto tipo prevede un aggiornamento non superiore al 75% della variazione.',
+    transitorio: 'Aggiornamento solo se previsto dal contratto e dall’accordo territoriale.',
+    commerciale: 'Di norma l’aggiornamento non può superare il 75% della variazione (L. 392/1978).',
+  };
+
+  let data: IstatData = { indici: {}, aggiornato: null, ultimoMese: null, segnaposto: 0 };
+  let last: { input: IstatInput; result: IstatResult } | null = null;
+
+  const letter = {
+    section: document.querySelector<HTMLElement>('.letter'),
+    text: document.querySelector<HTMLTextAreaElement>('[data-letter-text]'),
+    edited: document.querySelector<HTMLElement>('[data-letter-edited]'),
+    blocked: document.querySelector<HTMLElement>('[data-letter-blocked]'),
+    status: document.querySelector<HTMLElement>('[data-letter-status]'),
+    isEdited: false,
+  };
+
+  function letterField(name: string): string {
+    return letter.section?.querySelector<HTMLInputElement>(`input[name="${name}"]`)?.value ?? '';
+  }
+
+  function setLetterEnabled(enabled: boolean, message = ''): void {
+    letter.section?.querySelectorAll<HTMLButtonElement>('[data-letter-action]:not([data-letter-action="reset"])').forEach((b) => (b.disabled = !enabled));
+    if (letter.blocked) {
+      letter.blocked.hidden = enabled;
+      letter.blocked.textContent = message;
+    }
+  }
+
+  function updateLetter(force = false): void {
+    if (!letter.text) return;
+    if (!last) {
+      setLetterEnabled(false, 'Completa il calcolo per generare la lettera.');
+      if (!letter.isEdited) letter.text.value = '';
+      return;
+    }
+    if (last.result.canone.bloccato) {
+      setLetterEnabled(false, 'Con la cedolare secca l’aggiornamento del canone non è dovuto: la lettera non è disponibile.');
+      return;
+    }
+    setLetterEnabled(true);
+    if (letter.isEdited && !force) return;
+    const { input, result } = last;
+    letter.text.value = buildLetter({
+      locatore: letterField('locatore'),
+      indirizzoLocatore: letterField('indirizzoLocatore'),
+      conduttore: letterField('conduttore'),
+      immobile: letterField('immobile'),
+      estremi: letterField('estremi'),
+      luogo: letterField('luogo'),
+      data: new Intl.DateTimeFormat('it-IT', { dateStyle: 'long' }).format(new Date()),
+      tipo: input.tipo,
+      inizioMese: input.inizioMese,
+      inizioAnno: input.inizioAnno,
+      aggMese: input.aggMese,
+      aggAnno: input.aggAnno,
+      periodo: `${formatMonthKey(result.da)} – ${formatMonthKey(result.a)}`,
+      canone: input.canone,
+      risultato: result.canone,
+    });
+    letter.isEdited = false;
+    if (letter.edited) letter.edited.hidden = true;
+  }
+
+  function renderWarnings(avvisi: string[]): void {
+    const list = document.querySelector<HTMLElement>('[data-avvisi]');
+    if (!list) return;
+    list.replaceChildren(
+      ...avvisi.map((a) => {
+        const li = document.createElement('li');
+        li.textContent = a;
+        return li;
+      }),
+    );
+  }
+
+  function download(filename: string, content: string, type: string): void {
+    const url = URL.createObjectURL(new Blob([content], { type }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function showLetterStatus(message: string): void {
+    if (!letter.status) return;
+    letter.status.textContent = message;
+    window.setTimeout(() => letter.status && (letter.status.textContent = ''), 4000);
+  }
+
+  async function loadData(): Promise<boolean> {
+    try {
+      const res = await fetch('/data/istat-foi.json', { cache: 'no-cache' });
+      if (!res.ok) throw new Error(String(res.status));
+      data = parseIstatData(await res.json());
+      const status = document.querySelector('[data-istat-status]');
+      if (status) status.textContent = describeData(data);
+      return true;
+    } catch {
+      const status = document.querySelector('[data-istat-status]');
+      if (status) status.textContent = 'Non è stato possibile caricare gli indici FOI: inserisci tu la variazione percentuale.';
+      return false;
+    }
+  }
+
+  async function start(): Promise<void> {
+    const loaded = await loadData();
+    const form = document.querySelector<HTMLFormElement>('[data-calculator] form');
+    if (!form) return;
+
+    const setFonte = (fonte: string) => {
+      const radio = form.querySelector<HTMLInputElement>(`input[name="fonte"][value="${fonte}"]`);
+      if (radio) radio.checked = true;
+      form.querySelectorAll<HTMLElement>('[data-fonte]').forEach((el) => (el.hidden = el.dataset.fonte !== fonte));
+    };
+    if (!loaded || !data.ultimoMese) setFonte('manuale');
+
+    const ctrl = initCalculator({
+      read: (v, f): IstatInput => ({
+        canone: v.canone!,
+        tipo: selectValue(f, 'tipo') as ContractType,
+        inizioMese: Number(selectValue(f, 'inizioMese')),
+        inizioAnno: v.inizioAnno!,
+        aggMese: Number(selectValue(f, 'aggMese')),
+        aggAnno: v.aggAnno!,
+        anticipo: Number(selectValue(f, 'anticipo')),
+        percentuale: radioValue(f, 'percentuale') === '100' ? 100 : 75,
+        cedolare: radioValue(f, 'cedolare') === 'si',
+        variazioneManuale: radioValue(f, 'fonte') === 'manuale' ? v.variazione! : null,
+      }),
+      compute: (input) => computeIstat(input, data.indici),
+      present: presentIstat,
+      summary: summaryIstat,
+      announce: (_i, r) =>
+        r.canone.bloccato
+          ? 'Con la cedolare secca il canone resta invariato.'
+          : `Nuovo canone ${euro(r.canone.nuovoCanone)}, aumento mensile ${euro(r.canone.aumentoMensile)}.`,
+      after: (input, result) => {
+        last = { input, result };
+        renderWarnings(result.avvisi);
+        updateLetter();
+      },
+      invalid: () => {
+        last = null;
+        updateLetter();
+      },
+    });
+    if (!ctrl) return;
+
+    form.querySelectorAll<HTMLInputElement>('input[name="fonte"]').forEach((r) =>
+      r.addEventListener('change', () => setFonte(radioValue(form, 'fonte'))),
+    );
+
+    form.querySelector<HTMLSelectElement>('select[name="tipo"]')?.addEventListener('change', (e) => {
+      const tipo = (e.target as HTMLSelectElement).value as ContractType;
+      const hint = form.querySelector('[data-tipo-hint]');
+      if (hint) hint.textContent = TIPO_HINTS[tipo];
+      const radio = form.querySelector<HTMLInputElement>(`input[name="percentuale"][value="${CONTRACT_DEFAULT_PERCENT[tipo]}"]`);
+      if (radio && tipo !== 'libero') radio.checked = true;
+    });
+
+    letter.section?.querySelector('[data-letter-fields]')?.addEventListener('input', () => updateLetter());
+    letter.text?.addEventListener('input', () => {
+      letter.isEdited = true;
+      if (letter.edited) letter.edited.hidden = false;
+    });
+
+    letter.section?.addEventListener('click', async (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-letter-action]');
+      if (!btn || !letter.text) return;
+      const text = letter.text.value;
+      const name = last ? `aggiornamento-istat-canone-${last.input.aggAnno}-${String(last.input.aggMese).padStart(2, '0')}` : 'aggiornamento-istat-canone';
+      switch (btn.dataset.letterAction) {
+        case 'rtf':
+          download(`${name}.rtf`, toRtf(text), 'application/rtf');
+          showLetterStatus('Lettera scaricata.');
+          break;
+        case 'txt':
+          download(`${name}.txt`, `﻿${text.replace(/\n/g, '\r\n')}`, 'text/plain;charset=utf-8');
+          showLetterStatus('Lettera scaricata.');
+          break;
+        case 'copy':
+          showLetterStatus((await copyToClipboard(text)) ? 'Testo copiato negli appunti.' : 'Copia non riuscita.');
+          break;
+        case 'reset':
+          updateLetter(true);
+          break;
+      }
+    });
+  }
+
+  start();
+</script>
