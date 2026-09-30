@@ -43,7 +43,7 @@ export const AFFILIATE_BOXES = {
     note: 'Servizio offerto da un partner esterno.',
   },
   assicurazioneCasa: {
-    enabled: true,
+    enabled: false, // disattivato per ora: rimetti true per mostrarlo sotto il calcolatore ISTAT
     title: 'Affitti un immobile? Proteggilo con una polizza casa',
     text: 'Confronta le assicurazioni per proprietari che affittano: danni all’immobile, incendio e responsabilità civile verso terzi.',
     cta: 'Confronta le polizze casa',

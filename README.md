@@ -119,7 +119,8 @@ Tutto è in **`src/config/affiliates.ts`**:
 - `AMAZON_TAG`: il tuo ID di tracciamento Amazon (es. `homecost-21`). Sostituisce `AFFILIATE_TAG` in tutti i link
   `amazon.it/...&tag=...`.
 - `AFFILIATE_BOXES`: i box "call to action". `energia` compare sotto il calcolatore dei consumi
-  ("Stai pagando troppo l'energia? Confronta le offerte luce e gas"), `assicurazioneCasa` sotto quello ISTAT.
+  ("Stai pagando troppo l'energia? Confronta le offerte luce e gas"); `assicurazioneCasa` (sotto il calcolatore
+  ISTAT) è al momento disattivato.
   Per ognuno puoi cambiare titolo, testo, pulsante e URL, o nasconderlo con `enabled: false`.
 - `PRODUCTS`: le 3 schede "Prodotti consigliati" di pittura, piastrelle, cartongesso e parquet. Per ogni prodotto:
   - `query`: ricerca su Amazon (predefinita);
