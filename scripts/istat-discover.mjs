@@ -1,11 +1,11 @@
-// Esplorazione temporanea: dataflow ISTAT sui prezzi delle abitazioni (IPAB). v2
+// Esplorazione temporanea: dataflow ISTAT sui prezzi delle abitazioni (IPAB). v3
 const BASE = 'https://esploradati.istat.it/SDMXWS/rest';
 const XMLS = 'application/vnd.sdmx.structure+xml;version=2.1';
 const DATA = 'application/vnd.sdmx.genericdata+xml;version=2.1';
 async function get(url, accept) {
   const t = Date.now();
   try {
-    const res = await fetch(url, { headers: { Accept: accept }, signal: AbortSignal.timeout(60000) });
+    const res = await fetch(url, { headers: { Accept: accept }, signal: AbortSignal.timeout(240000) });
     const body = await res.text();
     console.log(`GET ${url} -> ${res.status} ${body.length}B ${Date.now() - t}ms`);
     return body;
