@@ -1,41 +1,31 @@
-// Esplorazione temporanea v4: identificativi IPAB via DBnomics, poi dati da ISTAT.
-const T = (ms) => AbortSignal.timeout(ms);
-async function json(url) {
+// Esplorazione temporanea v5: dataflow IPAB 143_497_DF_DCSP_IPAB_*.
+const BASE = 'https://esploradati.istat.it/SDMXWS/rest';
+const XMLS = 'application/vnd.sdmx.structure+xml;version=2.1';
+const DATA = 'application/vnd.sdmx.structurespecificdata+xml;version=2.1';
+async function get(url, accept, ms = 120000) {
+  const t = Date.now();
   try {
-    const r = await fetch(url, { signal: T(90000) });
-    console.log(`GET ${url} -> ${r.status}`);
-    return await r.json();
-  } catch (e) { console.log(`GET ${url} ERROR ${e}`); return null; }
-}
-const codes = new Set();
-for (let offset = 0; offset < 6000; offset += 1000) {
-  const d = await json(`https://api.db.nomics.world/v22/datasets/ISTAT?limit=1000&offset=${offset}`);
-  const docs = d?.datasets?.docs ?? [];
-  for (const x of docs) {
-    if (/IPAB|abitazion/i.test(`${x.code} ${x.name}`)) {
-      console.log(`DATASET ${x.code} | ${x.name} | series=${x.nb_series}`);
-      if (/IPAB/i.test(x.code)) codes.add(x.code);
-    }
-  }
-  if (docs.length < 1000) break;
-}
-const s2 = await json('https://api.db.nomics.world/v22/search?q=IPAB%20ISTAT&limit=30');
-for (const x of s2?.results?.docs ?? []) console.log(`SEARCH ${x.provider_code}/${x.code} | ${x.name}`);
-for (const code of codes) {
-  const d = await json(`https://api.db.nomics.world/v22/series/ISTAT/${code}?observations=1&limit=200&offset=0`);
-  const docs = d?.series?.docs ?? [];
-  console.log(`\n##### ${code}: ${d?.series?.num_found} serie`);
-  for (const s of docs) {
-    const n = s.period?.length ?? 0;
-    console.log(`${s.series_code} | ${s.series_name} | ${s.period?.[n - 1]}=${s.value?.[n - 1]} | first ${s.period?.[0]}`);
-  }
-  // Prova anche la stessa serie direttamente sull'ISTAT
-  try {
-    const r = await fetch(`https://esploradati.istat.it/SDMXWS/rest/data/IT1,${code},1.0/all?startPeriod=2026-Q1`, {
-      headers: { Accept: 'application/vnd.sdmx.structurespecificdata+xml;version=2.1' }, signal: T(120000),
-    });
+    const r = await fetch(url, { headers: { Accept: accept }, signal: AbortSignal.timeout(ms) });
     const body = await r.text();
-    const series = [...body.matchAll(/<Series ([^>]*)>/g)].map((m) => m[1]);
-    console.log(`ISTAT ${code} -> ${r.status}, ${series.length} serie; esempio: ${series.slice(0, 5).join(' || ')}`);
-  } catch (e) { console.log(`ISTAT ${code} ERROR ${e}`); }
+    console.log(`GET ${url} -> ${r.status} ${body.length}B ${Date.now() - t}ms`);
+    return r.ok ? body : '';
+  } catch (e) { console.log(`GET ${url} ERROR ${e}`); return ''; }
+}
+const db = await fetch('https://api.db.nomics.world/v22/series/ISTAT/143_497?observations=1&limit=100').then((r) => r.json()).catch(() => null);
+for (const s of db?.series?.docs ?? []) {
+  const n = s.period?.length ?? 0;
+  console.log(`DBN ${s.series_code} | ${s.series_name} | ${s.period?.[0]}..${s.period?.[n - 1]}=${s.value?.[n - 1]}`);
+}
+for (const n of [1, 2, 3, 4, 5, 6]) {
+  const id = `143_497_DF_DCSP_IPAB_${n}`;
+  const st = await get(`${BASE}/dataflow/IT1/${id}/1.0?references=datastructure`, XMLS, 90000);
+  if (!st) continue;
+  const name = /<common:Name xml:lang="it">([^<]*)</.exec(st)?.[1];
+  const dims = [...st.matchAll(/<structure:(?:Dimension|TimeDimension)\b[^>]*\bid="([^"]+)"[^>]*position="(\d+)"/g)].map((d) => `${d[2]}:${d[1]}`);
+  console.log(`\n##### ${id} :: ${name} :: ${dims.join(' ')}`);
+  const data = await get(`${BASE}/data/IT1,${id},1.0/all?startPeriod=2026-Q1`, DATA);
+  for (const m of [...data.matchAll(/<Series ([^>]*)>([\s\S]*?)<\/Series>/g)].slice(0, 120)) {
+    const obs = [...m[2].matchAll(/TIME_PERIOD="([^"]+)"[^>]*OBS_VALUE="([^"]+)"/g)].map((o) => `${o[1]}:${o[2]}`).join(' ');
+    console.log(`${m[1]} | ${obs}`);
+  }
 }
