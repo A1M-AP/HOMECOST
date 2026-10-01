@@ -2,7 +2,7 @@
  * Elenco dei calcolatori: alimenta menu, homepage, footer, link correlati e sitemap.
  */
 
-export type CalculatorId = 'energia' | 'pittura' | 'piastrelle' | 'cartongesso' | 'parquet' | 'istat';
+export type CalculatorId = 'valore' | 'energia' | 'pittura' | 'piastrelle' | 'cartongesso' | 'parquet' | 'istat';
 
 export interface CalculatorInfo {
   id: CalculatorId;
@@ -19,6 +19,15 @@ export interface CalculatorInfo {
 }
 
 export const CALCULATORS: CalculatorInfo[] = [
+  {
+    id: 'valore',
+    path: '/quanto-vale-la-mia-casa/',
+    name: 'Quanto vale la mia casa',
+    navLabel: 'Valore casa',
+    summary: 'Stima del valore di mercato con le quotazioni OMI della tua zona, aggiornate con l’ISTAT.',
+    icon: 'valore',
+    related: ['istat', 'energia', 'pittura'],
+  },
   {
     id: 'energia',
     path: '/consumo-elettrodomestici/',
@@ -71,7 +80,7 @@ export const CALCULATORS: CalculatorInfo[] = [
     navLabel: 'Affitto ISTAT',
     summary: 'Aggiornamento del canone con l’indice FOI e lettera pronta per l’inquilino.',
     icon: 'istat',
-    related: ['energia', 'pittura', 'parquet'],
+    related: ['valore', 'energia', 'pittura'],
   },
 ];
 

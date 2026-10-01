@@ -5,6 +5,7 @@ Costruito con [Astro](https://astro.build): nessun backend, tutti i calcoli avve
 
 | Pagina | Calcolatore |
 | --- | --- |
+| `/quanto-vale-la-mia-casa/` | Stima del valore di mercato di una casa (quotazioni OMI + indice ISTAT) |
 | `/consumo-elettrodomestici/` | Costo in bolletta di un elettrodomestico |
 | `/calcolo-pittura/` | Litri e barattoli di pittura |
 | `/calcolo-piastrelle/` | Piastrelle e scatole |
@@ -55,7 +56,8 @@ src/
   pages/                   una pagina per URL
   styles/global.css        stile unico, mobile-first, senza framework
 tests/calc.test.ts         test unitari delle formule
-scripts/update-istat.mjs   download automatico degli indici ISTAT (usato da GitHub Actions)
+scripts/update-istat.mjs   download automatico degli indici ISTAT FOI e IPAB (usato da GitHub Actions)
+scripts/build-omi.mjs      conversione dei CSV OMI in public/data/omi/
 .github/workflows/         workflow giornaliero di aggiornamento ISTAT
 netlify.toml               configurazione Netlify
 wrangler.jsonc             configurazione Cloudflare Workers
@@ -96,6 +98,32 @@ Dettagli tecnici:
 
 Aggiornamento manuale (solo se serve): scrivi `"AAAA-MM": valore` con il punto decimale, tutti nella stessa base,
 e aggiorna `"_aggiornato"` (`AAAA-MM-GG`).
+
+## Quanto vale la mia casa: dati OMI e indice ISTAT
+
+Il calcolatore stima il valore di mercato con il metodo sintetico-comparativo:
+superficie commerciale (DPR 138/1998) × quotazione OMI della zona × coefficienti (stato, piano, classe energetica)
+× aggiornamento con l'indice ISTAT dei prezzi delle abitazioni esistenti (IPAB).
+
+**Quotazioni OMI** (`public/data/omi/`): un file JSON per provincia con, per ogni comune e zona OMI, il prezzo
+minimo e massimo al m² di abitazioni civili, economiche, signorili, ville e box (stato "normale"). Sono generati da
+`scripts/build-omi.mjs` a partire dai CSV ufficiali dell'Agenzia delle Entrate. Attualmente contengono il
+**2° semestre 2018**, l'ultimo semestre disponibile senza credenziali (raccolta di [onData](https://github.com/ondata/quotazioni-immobiliari-agenzia-entrate)).
+
+Per usare un semestre recente (consigliato, gratuito):
+
+1. accedi all'area riservata dell'Agenzia delle Entrate (SPID/CIE) → Servizi → "Forniture dati OMI" →
+   "Quotazioni immobiliari" e scarica l'ultimo semestre per tutta Italia;
+2. esegui `node scripts/build-omi.mjs QI_..._VALORI.csv QI_..._ZONE.csv`;
+3. fai commit di `public/data/omi/`: il sito usa subito il nuovo semestre e l'aggiornamento ISTAT riparte da lì.
+
+Fonte da citare (già indicata nella pagina): "Agenzia Entrate - OMI". La licenza dei dati OMI non è una licenza
+aperta standard: verifica le condizioni d'uso dell'Agenzia per un sito con pubblicità.
+
+**Aggiornamento automatico** (`public/data/ipab.json`): lo stesso workflow giornaliero degli indici FOI scarica
+dall'API ISTAT l'indice IPAB delle abitazioni esistenti per Nord-ovest, Nord-est, Centro, Sud e Isole, Roma, Milano
+e Torino. A ogni nuova pubblicazione trimestrale le quotazioni OMI vengono riportate all'ultimo trimestre:
+`quotazione aggiornata = quotazione OMI × IPAB ultimo trimestre ÷ IPAB medio del semestre OMI`.
 
 ## Prezzi e stime di spesa
 

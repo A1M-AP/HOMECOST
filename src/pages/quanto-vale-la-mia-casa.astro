@@ -1,0 +1,406 @@
+---
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Field from '../components/Field.astro';
+import AffiliateBox from '../components/AffiliateBox.astro';
+import { PROVINCE, FASCE } from '../config/province';
+import { CLASSI, PIANI, STATI, TIPOLOGIE, calcValore, presentValore, type Tipologia, type ValoreInput } from '../lib/calc/valore';
+import { formatQuarter, formatSemester, ipabFactors, parseIpab } from '../lib/ipab';
+import { fmt } from '../lib/format';
+
+interface Zona {
+  c: string;
+  f: string;
+  d: string;
+  t: Partial<Record<Tipologia | 'box', [number, number]>>;
+}
+interface Comune {
+  n: string;
+  a: string;
+  z: Zona[];
+}
+
+const DATA_DIR = join(process.cwd(), 'public/data');
+const meta = JSON.parse(readFileSync(join(DATA_DIR, 'omi/meta.json'), 'utf8')) as {
+  semestre: string;
+  fonte: string;
+  province: { s: string; r: string; n: number }[];
+};
+const ipabFile = join(DATA_DIR, 'ipab.json');
+const ipab = parseIpab(existsSync(ipabFile) ? JSON.parse(readFileSync(ipabFile, 'utf8')) : {});
+const { factors, to } = ipabFactors(ipab, meta.semestre);
+const semestreLabel = formatSemester(meta.semestre);
+const aggiornamento = to
+  ? `Quotazioni OMI del ${semestreLabel} aggiornate con l’indice ISTAT dei prezzi delle abitazioni al ${formatQuarter(to)}.`
+  : `Quotazioni OMI del ${semestreLabel}: l’aggiornamento con l’indice ISTAT verrà applicato appena disponibile.`;
+
+// Province raggruppate per regione
+const regioni = new Map<string, { s: string; nome: string }[]>();
+for (const p of meta.province) {
+  if (!regioni.has(p.r)) regioni.set(p.r, []);
+  regioni.get(p.r)!.push({ s: p.s, nome: PROVINCE[p.s] ?? p.s });
+}
+const regioniOrdinate = [...regioni.entries()].sort(([a], [b]) => a.localeCompare(b, 'it'));
+for (const [, list] of regioniOrdinate) list.sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
+
+// Valori iniziali: Milano, prima zona centrale
+const DEFAULT_PROV = 'MI';
+const provData = JSON.parse(readFileSync(join(DATA_DIR, `omi/${DEFAULT_PROV}.json`), 'utf8')) as { c: Comune[] };
+const comuneIndex = provData.c.findIndex((c) => c.n === 'Milano');
+const comune = provData.c[comuneIndex];
+const zonaIndex = Math.max(0, comune.z.findIndex((z) => z.f === 'C' && z.t.civ));
+const zona = comune.z[zonaIndex];
+
+const zoneLabel = (z: Zona) => {
+  const d = z.d.length > 64 ? `${z.d.slice(0, 62).trim()}…` : z.d;
+  return `${FASCE[z.f] ?? z.f} – ${d} (${z.c})`;
+};
+
+const defaults: ValoreInput = {
+  superficie: 80,
+  balconi: 8,
+  cantina: 0,
+  giardino: 0,
+  box: 0,
+  quotazione: zona.t.civ!,
+  quotazioneBox: zona.t.box ?? null,
+  tipologia: 'civ',
+  stato: 'abitabile',
+  piano: 'intermedio',
+  classe: 'EF',
+  rivalutazione: factors[comune.a as keyof typeof factors] ?? 1,
+};
+const outcome = calcValore(defaults);
+if (!outcome.ok) throw new Error('Valori predefiniti non validi');
+const p = presentValore(defaults, outcome.result);
+const fattoreDefault = (defaults.rivalutazione - 1) * 100;
+
+const faq = [
+  {
+    q: 'Quanto è affidabile la stima del valore della casa?',
+    a: 'È una stima indicativa: parte dalle quotazioni ufficiali dell’Osservatorio del Mercato Immobiliare (OMI) dell’Agenzia delle Entrate per la tua zona e le corregge con stato, piano e classe energetica. Non vede però la casa: finiture, luminosità, vista, rumorosità e condizioni dell’edificio possono spostare il prezzo anche del 15–20%. Per vendere o comprare serve la valutazione di un agente o di un perito.',
+  },
+  {
+    q: 'Che cos’è la superficie commerciale?',
+    a: 'È la superficie usata nelle compravendite: comprende la superficie dell’abitazione con i muri interni e perimetrali e una quota delle pertinenze. Secondo i criteri del DPR 138/1998 i balconi contano il 30% fino a 25 m² (10% oltre), le cantine il 25% e il giardino il 10% fino alla superficie dell’abitazione (2% oltre).',
+  },
+  {
+    q: 'Che cosa sono le quotazioni OMI?',
+    a: 'Sono gli intervalli di prezzo al metro quadro (minimo e massimo) pubblicati ogni semestre dall’Osservatorio del Mercato Immobiliare dell’Agenzia delle Entrate per ogni zona di ogni comune e per tipologia di immobile. Si riferiscono a immobili in stato conservativo “normale” e sono la base più usata in Italia per le stime sintetiche.',
+  },
+  {
+    q: 'Come vengono aggiornati i valori?',
+    a: 'Le quotazioni OMI di riferimento vengono portate all’ultimo trimestre disponibile con l’indice ISTAT dei prezzi delle abitazioni esistenti (IPAB) della tua area (Nord-ovest, Nord-est, Centro, Sud e Isole) o, per Roma, Milano e Torino, della città. Il sito scarica in automatico i nuovi dati ISTAT appena vengono pubblicati.',
+  },
+  {
+    q: 'Perché il prezzo degli annunci è più alto della stima?',
+    a: 'Gli annunci riportano il prezzo richiesto dal venditore, che di solito include un margine di trattativa: il prezzo effettivo di vendita è spesso più basso di alcuni punti percentuali. Le quotazioni OMI invece si basano anche sulle compravendite realmente avvenute.',
+  },
+  {
+    q: 'Il mio comune non ha la tipologia che cerco: cosa faccio?',
+    a: 'In molti comuni piccoli l’OMI rileva solo alcune tipologie (per esempio solo abitazioni civili o solo ville). In quel caso scegli la tipologia più simile alla tua casa oppure una zona vicina con caratteristiche simili.',
+  },
+];
+---
+<CalculatorLayout
+  calc="valore"
+  title="Quanto vale la mia casa? Stima gratuita con dati OMI | HomeCost"
+  description="Calcola gratis quanto vale la tua casa: quotazioni OMI della tua zona, superficie commerciale, stato e piano, con valori aggiornati in automatico con l’indice ISTAT."
+  h1="Quanto vale la mia casa?"
+  lead="Scegli comune e zona, inserisci la superficie e le caratteristiche: ottieni una stima del valore di mercato con forchetta minima e massima."
+  faq={faq}
+  copyTitle="Stima del valore della casa"
+>
+  <script type="application/json" id="ipab-factors" set:html={JSON.stringify(factors)} />
+
+  <div class="fields">
+    <div class="field">
+      <label for="prov">Provincia</label>
+      <select id="prov" name="prov">
+        {
+          regioniOrdinate.map(([regione, list]) => (
+            <optgroup label={regione}>
+              {list.map((x) => <option value={x.s} selected={x.s === DEFAULT_PROV}>{x.nome}</option>)}
+            </optgroup>
+          ))
+        }
+      </select>
+    </div>
+    <div class="field">
+      <label for="comune">Comune</label>
+      <select id="comune" name="comune">
+        {provData.c.map((c, i) => <option value={i} data-a={c.a} selected={i === comuneIndex}>{c.n}</option>)}
+      </select>
+    </div>
+    <div class="field field--full">
+      <label for="zona">Zona OMI</label>
+      <select id="zona" name="zona" aria-describedby="zona-hint">
+        {comune.z.map((z, i) => <option value={i} data-t={JSON.stringify(z.t)} selected={i === zonaIndex}>{zoneLabel(z)}</option>)}
+      </select>
+      <p class="hint" id="zona-hint">Scegli la zona più vicina alla tua casa: centrale, semicentrale, periferica…</p>
+    </div>
+    <div class="field field--full">
+      <label for="tipologia">Tipologia</label>
+      <select id="tipologia" name="tipologia">
+        {Object.entries(TIPOLOGIE).map(([k, label]) => <option value={k} selected={k === defaults.tipologia}>{label}</option>)}
+      </select>
+    </div>
+    <Field id="superficie" label="Superficie" unit="m²" value={defaults.superficie} positive max={5000} hint="Muri compresi." />
+    <Field id="balconi" label="Balconi e terrazzi" unit="m²" value={defaults.balconi} optional max={2000} />
+  </div>
+
+  <fieldset class="form-group">
+    <legend>Caratteristiche</legend>
+    <div class="fields">
+      <div class="field">
+        <label for="stato">Stato</label>
+        <select id="stato" name="stato">
+          {Object.entries(STATI).map(([k, s]) => <option value={k} selected={k === defaults.stato}>{s.label}</option>)}
+        </select>
+      </div>
+      <div class="field">
+        <label for="classe">Classe energetica</label>
+        <select id="classe" name="classe">
+          {Object.entries(CLASSI).map(([k, s]) => <option value={k} selected={k === defaults.classe}>{s.label}</option>)}
+        </select>
+      </div>
+      <div class="field field--full" data-piano>
+        <label for="piano">Piano</label>
+        <select id="piano" name="piano">
+          {Object.entries(PIANI).map(([k, s]) => <option value={k} selected={k === defaults.piano}>{s.label}</option>)}
+        </select>
+      </div>
+    </div>
+  </fieldset>
+
+  <details class="advanced">
+    <summary>Cantina, giardino e box (facoltativi)</summary>
+    <div class="fields fields--row3">
+      <Field id="cantina" label="Cantina" unit="m²" optional max={1000} placeholder="0" />
+      <Field id="giardino" label="Giardino" unit="m²" optional max={100000} placeholder="0" />
+      <Field id="box" label="Box auto" unit="m²" optional max={500} placeholder="0" />
+    </div>
+  </details>
+
+  <Fragment slot="result">
+    <p class="result-title">Stima del valore</p>
+    <dl class="kpis">
+      <div class="kpi kpi--main kpi--wide">
+        <dt>Valore stimato</dt>
+        <dd><span data-out="valore">{p.text.valore}</span><small data-out="forchetta">{p.text.forchetta}</small></dd>
+      </div>
+      <div class="kpi">
+        <dt>Valore al m²</dt>
+        <dd><span data-out="eurM2">{p.text.eurM2}</span><small data-out="eurM2Range">{p.text.eurM2Range}</small></dd>
+      </div>
+      <div class="kpi">
+        <dt>Superficie commerciale</dt>
+        <dd><span data-out="superficie">{p.text.superficie}</span><small>DPR 138/1998</small></dd>
+      </div>
+    </dl>
+    <dl class="details">
+      <div><dt>Quotazione OMI della zona ({semestreLabel})</dt><dd data-out="quotazione">{p.text.quotazione}</dd></div>
+      <div><dt>Aggiornamento ISTAT prezzi abitazioni</dt><dd data-out="rivalutazione">{p.text.rivalutazione}</dd></div>
+      <div><dt>Correzione per stato, piano e classe</dt><dd data-out="coefficiente">{p.text.coefficiente}</dd></div>
+      <div data-show="box" hidden={!p.flags?.box}><dt>Abitazione</dt><dd data-out="valoreAbitazione">{p.text.valoreAbitazione}</dd></div>
+      <div data-show="box" hidden={!p.flags?.box}><dt>Box auto</dt><dd data-out="valoreBox">{p.text.valoreBox}</dd></div>
+    </dl>
+    <p class="result-note">{aggiornamento} Fonte: Agenzia Entrate - OMI; ISTAT.</p>
+    <p class="callout callout--warn">
+      <strong>È una stima indicativa, non una perizia.</strong> Finiture, luminosità, vista e condizioni dell’edificio
+      possono cambiare molto il prezzo: per vendere o comprare chiedi la valutazione di un professionista.
+    </p>
+  </Fragment>
+
+  <Fragment slot="after-result">
+    <AffiliateBox id="valutazione" />
+  </Fragment>
+
+  <Fragment slot="content">
+    <h2>Come si stima il valore di una casa</h2>
+    <p>
+      Il metodo più usato per una prima stima è quello <strong>sintetico-comparativo</strong>: si moltiplica la
+      superficie commerciale dell’immobile per il prezzo al metro quadro tipico della zona, poi si corregge il risultato
+      con le caratteristiche che rendono la casa migliore o peggiore della media. È lo stesso ragionamento che fa un
+      agente immobiliare, semplificato e reso trasparente.
+    </p>
+    <p class="formula">
+      superficie commerciale = superficie + 30% balconi (fino a 25 m²) + 25% cantina + 10% giardino<br />
+      valore al m² = quotazione OMI della zona × coefficienti di merito × aggiornamento ISTAT<br />
+      valore stimato = superficie commerciale × valore al m² (+ box)
+    </p>
+
+    <h3>Le quotazioni OMI</h3>
+    <p>
+      L’Osservatorio del Mercato Immobiliare (OMI) dell’Agenzia delle Entrate divide ogni comune in zone omogenee
+      (centrale, semicentrale, periferica, suburbana, extraurbana) e pubblica per ciascuna un prezzo minimo e massimo al
+      metro quadro per tipologia di immobile, in stato conservativo normale. Il calcolatore usa il centro di questa
+      forchetta come valore tipico e mostra anche il minimo e il massimo, perché due case nella stessa zona possono
+      valere cifre molto diverse.
+    </p>
+
+    <h3>L’aggiornamento con l’indice ISTAT</h3>
+    <p>
+      Le quotazioni di riferimento sono quelle del {semestreLabel}. Per riportarle a oggi il sito usa l’indice ISTAT dei
+      prezzi delle abitazioni esistenti (IPAB) della tua area geografica, o della città per Roma, Milano e Torino, e lo
+      aggiorna in automatico a ogni nuova pubblicazione trimestrale. {to ? `Per la zona di esempio (Milano) l’aggiornamento vale ${fattoreDefault >= 0 ? '+' : '−'}${fmt(Math.abs(fattoreDefault), 1)}%.` : ''}
+      È un metodo prudente ma approssimato: l’indice misura l’andamento medio dell’area, non quello del singolo
+      quartiere.
+    </p>
+
+    <h3>I coefficienti di merito</h3>
+    <ul>
+      <li><strong>Stato:</strong> da −20% per una casa da ristrutturare a +15% per una casa nuova.</li>
+      <li><strong>Piano:</strong> il piano terra e i piani alti senza ascensore valgono meno; attici e piani alti con ascensore di più.</li>
+      <li><strong>Classe energetica:</strong> le classi A e B valgono circa il 5% in più, la classe G circa il 6% in meno.</li>
+    </ul>
+
+    <h2>Esempio pratico</h2>
+    <p>
+      Un appartamento civile di 80 m² con 8 m² di balcone, in buono stato, a un piano intermedio con ascensore e in classe
+      energetica E. La zona ha una quotazione OMI di 3.000–3.600 €/m² (valori di esempio).
+    </p>
+    <ol class="steps">
+      <li><strong>Superficie commerciale:</strong> 80 + 8 × 30% = 82,4 m².</li>
+      <li><strong>Quotazione media:</strong> (3.000 + 3.600) ÷ 2 = 3.300 €/m².</li>
+      <li><strong>Coefficienti:</strong> stato 1,00 × piano 1,00 × classe E 0,97 = 0,97.</li>
+      <li><strong>Aggiornamento ISTAT</strong> ipotizzato +10%: 3.300 × 0,97 × 1,10 = circa 3.520 €/m².</li>
+      <li><strong>Valore stimato:</strong> 82,4 × 3.520 = circa 290.000 €, con una forchetta da 264.000 a 317.000 €.</li>
+    </ol>
+
+    <h2>Errori comuni da evitare</h2>
+    <ul>
+      <li>
+        <strong>Usare la superficie calpestabile.</strong> Nelle compravendite si usa la superficie commerciale, muri
+        compresi: quella calpestabile è più piccola di circa il 10–15%.
+      </li>
+      <li>
+        <strong>Confrontarsi solo con gli annunci.</strong> Il prezzo richiesto non è il prezzo di vendita: la trattativa
+        lo riduce quasi sempre.
+      </li>
+      <li>
+        <strong>Scegliere la zona sbagliata.</strong> Le zone OMI possono essere molto diverse anche a poche vie di
+        distanza: controlla la descrizione della zona e scegli quella che corrisponde davvero alla tua via.
+      </li>
+      <li>
+        <strong>Ignorare lo stato dell’edificio.</strong> Facciata, tetto e impianti condominiali da rifare pesano sul
+        prezzo anche se l’appartamento è ristrutturato.
+      </li>
+    </ul>
+    <p>
+      Se la casa è in affitto, puoi aggiornare il canone con il <a href="/rivalutazione-istat-affitto/">calcolatore della
+      rivalutazione ISTAT</a>; se pensi di migliorarne la classe energetica, parti dai <a href="/consumo-elettrodomestici/">consumi
+      in bolletta</a>.
+    </p>
+  </Fragment>
+</CalculatorLayout>
+
+<script>
+  import { initCalculator, selectValue } from '../scripts/calc-engine.ts';
+  import { calcValore, presentValore, summaryValore, type Classe, type Piano, type Stato, type Tipologia, type ValoreInput } from '../lib/calc/valore.ts';
+  import { int } from '../lib/format.ts';
+
+  interface Zona { c: string; f: string; d: string; t: Partial<Record<Tipologia | 'box', [number, number]>> }
+  interface Comune { n: string; a: string; z: Zona[] }
+
+  const FASCE: Record<string, string> = { B: 'Centrale', C: 'Semicentrale', D: 'Periferica', E: 'Suburbana', R: 'Extraurbana' };
+  const factors: Record<string, number> = JSON.parse(document.getElementById('ipab-factors')?.textContent || '{}');
+  const cache = new Map<string, Comune[]>();
+
+  const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
+  const provSel = $<HTMLSelectElement>('#prov');
+  const comSel = $<HTMLSelectElement>('#comune');
+  const zonaSel = $<HTMLSelectElement>('#zona');
+  const tipSel = $<HTMLSelectElement>('#tipologia');
+  const pianoField = $<HTMLElement>('[data-piano]');
+
+  const zoneLabel = (z: Zona) => `${FASCE[z.f] ?? z.f} – ${z.d.length > 64 ? `${z.d.slice(0, 62).trim()}…` : z.d} (${z.c})`;
+
+  function option(value: string, label: string, data: Record<string, string> = {}): HTMLOptionElement {
+    const o = document.createElement('option');
+    o.value = value;
+    o.textContent = label;
+    for (const [k, v] of Object.entries(data)) o.dataset[k] = v;
+    return o;
+  }
+
+  async function loadProvince(sigla: string): Promise<Comune[]> {
+    if (!cache.has(sigla)) {
+      const res = await fetch(`/data/omi/${sigla}.json`);
+      if (!res.ok) throw new Error(String(res.status));
+      cache.set(sigla, ((await res.json()) as { c: Comune[] }).c);
+    }
+    return cache.get(sigla)!;
+  }
+
+  function fillZones(comune: Comune): void {
+    const preferred = Math.max(0, comune.z.findIndex((z) => z.f === 'B' && (z.t.civ || z.t.vil)));
+    zonaSel.replaceChildren(...comune.z.map((z, i) => option(String(i), zoneLabel(z), { t: JSON.stringify(z.t) })));
+    zonaSel.selectedIndex = preferred;
+    syncTipologia();
+  }
+
+  /** Abilita solo le tipologie con una quotazione nella zona scelta. */
+  function syncTipologia(): void {
+    const t = JSON.parse(zonaSel.selectedOptions[0]?.dataset.t || '{}');
+    for (const o of tipSel.options) o.disabled = !t[o.value];
+    if (tipSel.selectedOptions[0]?.disabled) {
+      const first = [...tipSel.options].find((o) => !o.disabled);
+      if (first) tipSel.value = first.value;
+    }
+    pianoField.hidden = tipSel.value === 'vil';
+  }
+
+  const ctrl = initCalculator({
+    read: (v, form): ValoreInput => {
+      const t = JSON.parse(zonaSel.selectedOptions[0]?.dataset.t || '{}');
+      const tipologia = selectValue(form, 'tipologia') as Tipologia;
+      const area = comSel.selectedOptions[0]?.dataset.a ?? 'SI';
+      return {
+        superficie: v.superficie!,
+        balconi: v.balconi ?? 0,
+        cantina: v.cantina ?? 0,
+        giardino: v.giardino ?? 0,
+        box: v.box ?? 0,
+        quotazione: t[tipologia] ?? [0, 0],
+        quotazioneBox: t.box ?? null,
+        tipologia,
+        stato: selectValue(form, 'stato') as Stato,
+        piano: selectValue(form, 'piano') as Piano,
+        classe: selectValue(form, 'classe') as Classe,
+        rivalutazione: factors[area] ?? 1,
+      };
+    },
+    compute: calcValore,
+    present: presentValore,
+    summary: (i, r) =>
+      summaryValore(i, r, `${comSel.selectedOptions[0]?.textContent} (${provSel.value}), zona ${zonaSel.selectedOptions[0]?.textContent}`),
+    announce: (_i, r) => `Valore stimato circa ${int(Math.round(r.totale / 1000) * 1000)} euro.`,
+  });
+
+  if (ctrl) {
+    syncTipologia();
+    provSel.addEventListener('change', async () => {
+      try {
+        const comuni = await loadProvince(provSel.value);
+        // Preseleziona il comune con più zone (di solito il capoluogo)
+        let best = 0;
+        comuni.forEach((c, i) => { if (c.z.length > comuni[best].z.length) best = i; });
+        comSel.replaceChildren(...comuni.map((c, i) => option(String(i), c.n, { a: c.a })));
+        comSel.selectedIndex = best;
+        fillZones(comuni[best]);
+      } catch {
+        zonaSel.replaceChildren(option('', 'Dati non disponibili, riprova'));
+      }
+      ctrl.refresh();
+    });
+    comSel.addEventListener('change', async () => {
+      const comuni = await loadProvince(provSel.value);
+      fillZones(comuni[Number(comSel.value)]);
+      ctrl.refresh();
+    });
+    zonaSel.addEventListener('change', () => syncTipologia());
+    tipSel.addEventListener('change', () => syncTipologia());
+  }
+</script>

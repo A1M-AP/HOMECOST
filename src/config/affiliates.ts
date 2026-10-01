@@ -42,6 +42,14 @@ export const AFFILIATE_BOXES = {
     url: 'https://www.example.com/confronto-offerte-luce-gas?ref=homecost', // SEGNAPOSTO
     note: 'Servizio offerto da un partner esterno.',
   },
+  valutazione: {
+    enabled: false, // attivalo quando hai un partner (agenzie immobiliari o periti)
+    title: 'Vuoi una valutazione precisa? Chiedila a un’agenzia della tua zona',
+    text: 'Un agente immobiliare o un perito può vedere la casa e confrontarla con le compravendite recenti: la valutazione è spesso gratuita e senza impegno.',
+    cta: 'Richiedi una valutazione gratuita',
+    url: 'https://www.example.com/valutazione-casa?ref=homecost', // SEGNAPOSTO
+    note: 'Servizio offerto da un partner esterno.',
+  },
   assicurazioneCasa: {
     enabled: false, // disattivato per ora: rimetti true per mostrarlo sotto il calcolatore ISTAT
     title: 'Affitti un immobile? Proteggilo con una polizza casa',
