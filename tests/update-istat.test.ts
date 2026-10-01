@@ -38,3 +38,23 @@ test('controlli di plausibilità', () => {
   delete gap['2025-03'];
   assert.throws(() => validate(gap, new Date('2026-08-15')), /consecutivi/);
 });
+
+test('IPAB: lettura delle serie per area e controlli', async () => {
+  const { parseSeriesBy, yoyQuarter, validateIpab, IPAB_AREE } = await import('../scripts/update-istat.mjs');
+  const xml = `<Series FREQ="Q" REF_AREA="ITC" DATA_TYPE="105" MEASURE="4" PURCHASES_DWELLINGS="EXST_DW">
+<Obs TIME_PERIOD="2025-Q2" OBS_VALUE="100.2" /><Obs TIME_PERIOD="2026-Q2" OBS_VALUE="103.5" /></Series>
+<Series FREQ="Q" REF_AREA="ITE43" DATA_TYPE="105" MEASURE="4" PURCHASES_DWELLINGS="EXST_DW"><Obs TIME_PERIOD="2026-Q2" OBS_VALUE="105.3"/></Series>`;
+  const s = parseSeriesBy(xml, 'REF_AREA');
+  assert.deepEqual(s, { ITC: { '2025-Q2': 100.2, '2026-Q2': 103.5 }, ITE43: { '2026-Q2': 105.3 } });
+  assert.equal(yoyQuarter(s.ITC, '2026-Q2'), 3.3);
+
+  const full: Record<string, Record<string, number>> = {};
+  for (const code of Object.keys(IPAB_AREE)) {
+    full[code] = {};
+    for (let i = 0; i < 24; i++) full[code][`${2021 + Math.floor(i / 4)}-Q${(i % 4) + 1}`] = 90 + i;
+  }
+  assert.doesNotThrow(() => validateIpab(full, new Date('2026-10-01')));
+  assert.throws(() => validateIpab(full, new Date('2028-01-01')), /troppo vecchio/);
+  const { ITC: _omit, ...missing } = full;
+  assert.throws(() => validateIpab(missing, new Date('2026-10-01')), /mancante/);
+});
