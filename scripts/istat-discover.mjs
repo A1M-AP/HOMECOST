@@ -1,34 +1,35 @@
-// Esplorazione temporanea: dataflow ISTAT sui prezzi delle abitazioni (IPAB). v3
-const BASE = 'https://esploradati.istat.it/SDMXWS/rest';
-const XMLS = 'application/vnd.sdmx.structure+xml;version=2.1';
-const DATA = 'application/vnd.sdmx.genericdata+xml;version=2.1';
-async function get(url, accept) {
-  const t = Date.now();
+// Esplorazione temporanea v4: identificativi IPAB via DBnomics, poi dati da ISTAT.
+const T = (ms) => AbortSignal.timeout(ms);
+async function json(url) {
   try {
-    const res = await fetch(url, { headers: { Accept: accept }, signal: AbortSignal.timeout(240000) });
-    const body = await res.text();
-    console.log(`GET ${url} -> ${res.status} ${body.length}B ${Date.now() - t}ms`);
-    return body;
-  } catch (e) { console.log(`GET ${url} ERROR ${e}`); return ''; }
+    const r = await fetch(url, { signal: T(90000) });
+    console.log(`GET ${url} -> ${r.status}`);
+    return await r.json();
+  } catch (e) { console.log(`GET ${url} ERROR ${e}`); return null; }
 }
-const xml = await get(`${BASE}/dataflow/IT1`, XMLS);
-const flows = [];
-for (const m of xml.matchAll(/<structure:Dataflow\b([^>]*)>([\s\S]*?)<\/structure:Dataflow>/g)) {
-  const id = /\bid="([^"]+)"/.exec(m[1])?.[1];
-  const it = /<common:Name xml:lang="it">([^<]*)</.exec(m[2])?.[1] ?? '';
-  if (/abitazion|IPAB|immobil/i.test(it + id) && /prezz|IPAB/i.test(it + id)) { flows.push(id); console.log(`FLOW ${id} :: ${it}`); }
-}
-for (const id of flows.filter((f) => /_DF_/.test(f)).slice(0, 6)) {
-  console.log(`\n##### ${id}`);
-  const st = await get(`${BASE}/dataflow/IT1/${id}/1.0?references=datastructure`, XMLS);
-  const dims = [...st.matchAll(/<structure:(?:Dimension|TimeDimension)\b[^>]*\bid="([^"]+)"[^>]*position="(\d+)"/g)].map((d) => `${d[2]}:${d[1]}`);
-  console.log('DIMS', dims.join(' '));
-  const data = await get(`${BASE}/data/IT1,${id},1.0/all?startPeriod=2026-Q1&endPeriod=2026-Q2`, DATA);
-  const series = [...data.matchAll(/<generic:SeriesKey>([\s\S]*?)<\/generic:SeriesKey>([\s\S]*?)<\/generic:Series>/g)];
-  console.log(`series: ${series.length}`);
-  for (const s of series.slice(0, 80)) {
-    const key = [...s[1].matchAll(/id="([^"]+)" value="([^"]+)"/g)].map((v) => `${v[1]}=${v[2]}`).join(',');
-    const obs = [...s[2].matchAll(/ObsDimension id="TIME_PERIOD" value="([^"]+)"[\s\S]*?ObsValue value="([^"]+)"/g)].map((o) => `${o[1]}:${o[2]}`).join(' ');
-    console.log(`${key} | ${obs}`);
+const codes = new Set();
+for (const q of ['IPAB', 'abitazioni']) {
+  const d = await json(`https://api.db.nomics.world/v22/datasets/ISTAT?q=${q}&limit=50`);
+  for (const x of d?.datasets?.docs ?? []) {
+    console.log(`DATASET ${x.code} | ${x.name} | series=${x.nb_series}`);
+    if (/IPAB/i.test(x.code)) codes.add(x.code);
   }
+}
+for (const code of codes) {
+  const d = await json(`https://api.db.nomics.world/v22/series/ISTAT/${code}?observations=1&limit=200&offset=0`);
+  const docs = d?.series?.docs ?? [];
+  console.log(`\n##### ${code}: ${d?.series?.num_found} serie`);
+  for (const s of docs) {
+    const n = s.period?.length ?? 0;
+    console.log(`${s.series_code} | ${s.series_name} | ${s.period?.[n - 1]}=${s.value?.[n - 1]} | first ${s.period?.[0]}`);
+  }
+  // Prova anche la stessa serie direttamente sull'ISTAT
+  try {
+    const r = await fetch(`https://esploradati.istat.it/SDMXWS/rest/data/IT1,${code},1.0/all?startPeriod=2026-Q1`, {
+      headers: { Accept: 'application/vnd.sdmx.structurespecificdata+xml;version=2.1' }, signal: T(120000),
+    });
+    const body = await r.text();
+    const series = [...body.matchAll(/<Series ([^>]*)>/g)].map((m) => m[1]);
+    console.log(`ISTAT ${code} -> ${r.status}, ${series.length} serie; esempio: ${series.slice(0, 5).join(' || ')}`);
+  } catch (e) { console.log(`ISTAT ${code} ERROR ${e}`); }
 }
