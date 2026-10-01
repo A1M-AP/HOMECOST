@@ -8,13 +8,19 @@ async function json(url) {
   } catch (e) { console.log(`GET ${url} ERROR ${e}`); return null; }
 }
 const codes = new Set();
-for (const q of ['IPAB', 'abitazioni']) {
-  const d = await json(`https://api.db.nomics.world/v22/datasets/ISTAT?q=${q}&limit=50`);
-  for (const x of d?.datasets?.docs ?? []) {
-    console.log(`DATASET ${x.code} | ${x.name} | series=${x.nb_series}`);
-    if (/IPAB/i.test(x.code)) codes.add(x.code);
+for (let offset = 0; offset < 6000; offset += 1000) {
+  const d = await json(`https://api.db.nomics.world/v22/datasets/ISTAT?limit=1000&offset=${offset}`);
+  const docs = d?.datasets?.docs ?? [];
+  for (const x of docs) {
+    if (/IPAB|abitazion/i.test(`${x.code} ${x.name}`)) {
+      console.log(`DATASET ${x.code} | ${x.name} | series=${x.nb_series}`);
+      if (/IPAB/i.test(x.code)) codes.add(x.code);
+    }
   }
+  if (docs.length < 1000) break;
 }
+const s2 = await json('https://api.db.nomics.world/v22/search?q=IPAB%20ISTAT&limit=30');
+for (const x of s2?.results?.docs ?? []) console.log(`SEARCH ${x.provider_code}/${x.code} | ${x.name}`);
 for (const code of codes) {
   const d = await json(`https://api.db.nomics.world/v22/series/ISTAT/${code}?observations=1&limit=200&offset=0`);
   const docs = d?.series?.docs ?? [];
