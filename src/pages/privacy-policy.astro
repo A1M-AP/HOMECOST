@@ -1,6 +1,6 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
-import { SITE } from '../config/site';
+import { SITE, ownerDetails } from '../config/site';
 ---
 <PageLayout
   title="Privacy policy | HomeCost"
@@ -15,8 +15,7 @@ import { SITE } from '../config/site';
 
   <h2>1. Titolare del trattamento</h2>
   <p>
-    Il titolare del trattamento è [NOME E COGNOME / RAGIONE SOCIALE], con sede in [INDIRIZZO], [P. IVA / CODICE FISCALE],
-    contattabile all’indirizzo <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
+    Il titolare del trattamento è {ownerDetails()}, contattabile all’indirizzo <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
   </p>
 
   <h2>2. Quali dati trattiamo</h2>

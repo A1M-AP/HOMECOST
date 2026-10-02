@@ -1,6 +1,6 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
-import { SITE } from '../config/site';
+import { SITE, ownerDetails } from '../config/site';
 import { AFFILIATE_DISCLOSURE, AMAZON_DISCLOSURE } from '../config/affiliates';
 ---
 <PageLayout
@@ -10,12 +10,12 @@ import { AFFILIATE_DISCLOSURE, AMAZON_DISCLOSURE } from '../config/affiliates';
   updated="[DA COMPLETARE]"
 >
   <p class="placeholder-note">
-    <strong>Testo segnaposto.</strong> Completa i dati del titolare e verifica il testo prima della pubblicazione.
+    <strong>Testo segnaposto.</strong> Verifica il testo prima della pubblicazione.
   </p>
 
   <h2>Titolare del sito</h2>
   <p>
-    {SITE.url.replace('https://', '')} è gestito da [NOME E COGNOME / RAGIONE SOCIALE], [INDIRIZZO], [P. IVA], e-mail
+    {SITE.url.replace('https://', '')} è gestito da {ownerDetails()}, e-mail
     <a href={`mailto:${SITE.email}`}>{SITE.email}</a>.
   </p>
 

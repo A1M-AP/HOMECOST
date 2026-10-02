@@ -12,11 +12,30 @@ export const SITE = {
   description:
     'Calcolatori gratuiti per casa ed energia: costo in bolletta degli elettrodomestici, pittura, piastrelle, cartongesso, parquet e rivalutazione ISTAT dell’affitto.',
   /** Indirizzo mostrato nella pagina Contatti e nelle pagine legali. */
-  email: 'info@homecost.it',
+  email: 'petrescumihaiantonio@gmail.com',
   /** Immagine usata per l'anteprima nei social (1200×630). */
   ogImage: '/og-image.jpg',
   themeColor: '#0f766e',
 } as const;
+
+/**
+ * Titolare del sito e del trattamento dei dati (pagine Contatti, Privacy policy e Note legali).
+ * Sede e partita IVA compaiono solo se compilate.
+ */
+export const OWNER = {
+  name: 'MAP Technologies',
+  /** Sede, es. "Via Roma 1, 00100 Roma (RM)". */
+  address: '',
+  /** Partita IVA o codice fiscale. */
+  vatId: '',
+};
+
+/** "MAP Technologies, con sede in …, P. IVA …" con i soli dati compilati. */
+export function ownerDetails(): string {
+  return [OWNER.name, OWNER.address && `con sede in ${OWNER.address}`, OWNER.vatId && `P. IVA ${OWNER.vatId}`]
+    .filter(Boolean)
+    .join(', ');
+}
 
 /**
  * Statistiche. Lascia vuoto per non caricare nulla.
