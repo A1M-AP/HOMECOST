@@ -29,3 +29,14 @@ export interface Presentation {
   /** Condizioni per gli elementi `[data-show="chiave"]` (visibili se true). */
   flags?: Record<string, boolean>;
 }
+
+/** Somma le voci di spesa disponibili (materiali, posa…): null se non ce n'è nessuna. */
+export function sumCosts(...parts: (number | null)[]): number | null {
+  const known = parts.filter((p): p is number => p !== null);
+  return known.length ? known.reduce((a, b) => a + b, 0) : null;
+}
+
+/** Costo della manodopera: quantità × prezzo unitario, null senza prezzo. */
+export function laborCost(quantity: number, unitPrice?: number | null): number | null {
+  return unitPrice ? quantity * unitPrice : null;
+}

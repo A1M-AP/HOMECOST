@@ -5,7 +5,7 @@ import ProductBox from '../components/ProductBox.astro';
 import { calcPittura, presentPittura, type PitturaInput } from '../lib/calc/pittura';
 import { currentPrices } from '../lib/istat-data';
 
-const { prices, note: priceNote } = currentPrices();
+const { prices, note: priceNote } = currentPrices(['materiali', 'manodopera']);
 
 const defaults: PitturaInput = {
   lunghezza: 4,
@@ -22,6 +22,7 @@ const defaults: PitturaInput = {
   resa: 10,
   scarto: 10,
   prezzi: prices.pittura,
+  prezzoPosaM2: prices.posa.pitturaM2,
 };
 const outcome = calcPittura(defaults);
 if (!outcome.ok) throw new Error('Valori predefiniti non validi');
@@ -103,12 +104,15 @@ const faq = [
   </fieldset>
 
   <details class="advanced">
-    <summary>Prezzi dei barattoli e spesa stimata</summary>
+    <summary>Prezzi, manodopera e spesa stimata</summary>
     <p class="hint">{priceNote} Modificali con i prezzi del tuo negozio: calcoliamo la combinazione più economica.</p>
     <div class="fields fields--row3">
       <Field id="p25" label="2,5 L" unit="€" optional value={prices.pittura[2.5]} />
       <Field id="p5" label="5 L" unit="€" optional value={prices.pittura[5]} />
       <Field id="p10" label="10 L" unit="€" optional value={prices.pittura[10]} />
+    </div>
+    <div class="fields" style="margin-top:14px">
+      <Field id="posaM2" label="Manodopera imbianchino" unit="€/m²" optional value={prices.posa.pitturaM2} max={1000} hint="Prezzo al m² per tutte le mani, pittura esclusa. Lascia vuoto se fai da te." />
     </div>
   </details>
 
@@ -124,8 +128,12 @@ const faq = [
         <dd><span data-out="superficie">{p.text.superficie}</span><small data-out="mani">{p.text.mani}</small></dd>
       </div>
       <div class="kpi kpi--cost" data-show="costo" hidden={!p.flags?.costo}>
-        <dt>Spesa stimata</dt>
-        <dd><span data-out="comboCosto">{p.text.comboCosto}</span><small>prezzi medi aggiornati con l’indice ISTAT</small></dd>
+        <dt>Spesa pittura</dt>
+        <dd><span data-out="comboCosto">{p.text.comboCosto}</span><small>prezzi medi aggiornati con gli indici ISTAT</small></dd>
+      </div>
+      <div class="kpi kpi--cost" data-show="posa" hidden={!p.flags?.posa}>
+        <dt>Con un imbianchino</dt>
+        <dd><span data-out="costoTotale">{p.text.costoTotale}</span><small>di cui manodopera <span data-out="costoPosa">{p.text.costoPosa}</span></small></dd>
       </div>
     </dl>
     <dl class="details">
@@ -270,6 +278,7 @@ const faq = [
       resa: v.resa!,
       scarto: v.scarto!,
       prezzi: { 2.5: v.p25 ?? undefined, 5: v.p5 ?? undefined, 10: v.p10 ?? undefined },
+      prezzoPosaM2: v.posaM2,
     }),
     compute: calcPittura,
     present: presentPittura,

@@ -5,7 +5,7 @@
  * litri = superficie × mani ÷ resa × (1 + scarto)
  */
 import { euro, fmt, plural } from '../format.ts';
-import { ceilSafe, withWaste, type CalcOutcome, type Presentation } from './utils.ts';
+import { ceilSafe, laborCost, sumCosts, withWaste, type CalcOutcome, type Presentation } from './utils.ts';
 
 export const CAN_SIZES = [2.5, 5, 10] as const;
 export type CanSize = (typeof CAN_SIZES)[number];
@@ -28,6 +28,8 @@ export interface PitturaInput {
   scarto: number;
   /** Prezzi dei barattoli (facoltativi): se presenti tutti, si cerca la combinazione più economica. */
   prezzi?: Partial<Record<CanSize, number>>;
+  /** Manodopera per la tinteggiatura, € per m² di superficie (facoltativa). */
+  prezzoPosaM2?: number | null;
 }
 
 export interface CanCombo {
@@ -48,6 +50,10 @@ export interface PitturaResult {
   perFormato: { size: CanSize; pezzi: number; litri: number }[];
   migliore: CanCombo;
   criterio: 'prezzo' | 'spreco';
+  /** Manodopera stimata, null senza prezzo. */
+  costoPosa: number | null;
+  /** Pittura + manodopera, null se non c'è nessun prezzo. */
+  costoTotale: number | null;
 }
 
 export function calcPittura(i: PitturaInput): CalcOutcome<PitturaResult> {
@@ -76,6 +82,8 @@ export function calcPittura(i: PitturaInput): CalcOutcome<PitturaResult> {
 
   const prezzi = i.prezzi;
   const conPrezzi = !!prezzi && CAN_SIZES.every((s) => typeof prezzi[s] === 'number' && prezzi[s]! > 0);
+  const migliore = bestCombo(litri, conPrezzi ? (prezzi as Record<CanSize, number>) : undefined);
+  const costoPosa = laborCost(superficie, i.prezzoPosaM2);
 
   return {
     ok: true,
@@ -87,8 +95,10 @@ export function calcPittura(i: PitturaInput): CalcOutcome<PitturaResult> {
       litriNetti,
       litri,
       perFormato,
-      migliore: bestCombo(litri, conPrezzi ? (prezzi as Record<CanSize, number>) : undefined),
+      migliore,
       criterio: conPrezzi ? 'prezzo' : 'spreco',
+      costoPosa,
+      costoTotale: sumCosts(migliore.costo, costoPosa),
     },
   };
 }
@@ -147,6 +157,8 @@ export function presentPittura(i: PitturaInput, r: PitturaResult): Presentation 
     combo: describeCombo(r.migliore),
     comboLitri: `${fmt(r.migliore.litri, 1)} L acquistati, ${fmt(r.migliore.litri - r.litri, 1)} L di margine`,
     comboCosto: r.migliore.costo !== null ? euro(r.migliore.costo) : '',
+    costoPosa: r.costoPosa !== null ? euro(r.costoPosa) : '',
+    costoTotale: r.costoTotale !== null ? euro(r.costoTotale) : '',
     criterio:
       r.criterio === 'prezzo'
         ? 'la più economica in base ai prezzi che hai inserito'
@@ -158,7 +170,13 @@ export function presentPittura(i: PitturaInput, r: PitturaResult): Presentation 
   }
   return {
     text,
-    flags: { soffitto: i.soffitto, aperture: r.aperture > 0, prezzi: r.criterio === 'prezzo', costo: r.migliore.costo !== null },
+    flags: {
+      soffitto: i.soffitto,
+      aperture: r.aperture > 0,
+      prezzi: r.criterio === 'prezzo',
+      costo: r.migliore.costo !== null,
+      posa: r.costoPosa !== null,
+    },
   };
 }
 
@@ -170,5 +188,9 @@ export function summaryPittura(i: PitturaInput, r: PitturaResult): string {
     `Pittura necessaria: ${fmt(r.litri, 1)} litri`,
     ...r.perFormato.map((f) => `Solo barattoli da ${fmt(f.size, 1)} L: ${f.pezzi}`),
     `Combinazione consigliata: ${describeCombo(r.migliore)}${r.migliore.costo !== null ? ` (${euro(r.migliore.costo)})` : ''}`,
-  ].join('\n');
+    r.costoPosa !== null ? `Manodopera tinteggiatura: ${euro(r.costoPosa)} (${euro(i.prezzoPosaM2 ?? 0)}/m²)` : '',
+    r.costoPosa !== null && r.costoTotale !== null ? `Spesa totale con la posa: ${euro(r.costoTotale)}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }

@@ -6,7 +6,7 @@
  * scatole = m² con scarto ÷ m² per scatola (per eccesso)
  */
 import { euro, fmt, int } from '../format.ts';
-import { ceilSafe, withWaste, type CalcOutcome, type Presentation } from './utils.ts';
+import { ceilSafe, laborCost, sumCosts, withWaste, type CalcOutcome, type Presentation } from './utils.ts';
 
 /** Scarto consigliato per tipo di posa (%). */
 export const TILE_WASTE = { dritta: 10, diagonale: 15 } as const;
@@ -20,6 +20,8 @@ export interface PiastrelleInput {
   scarto: number;
   /** Prezzo al m² (facoltativo): se presente si calcola la spesa stimata. */
   prezzoM2?: number | null;
+  /** Manodopera per la posa, €/m² (facoltativa). */
+  prezzoPosaM2?: number | null;
 }
 
 export interface PiastrelleResult {
@@ -33,6 +35,9 @@ export interface PiastrelleResult {
   avanzo: number;
   /** Spesa stimata (scatole acquistate × prezzo al m²), null senza prezzo. */
   costo: number | null;
+  /** Manodopera stimata (superficie × prezzo posa), null senza prezzo. */
+  costoPosa: number | null;
+  costoTotale: number | null;
 }
 
 export function calcPiastrelle(i: PiastrelleInput): CalcOutcome<PiastrelleResult> {
@@ -46,6 +51,8 @@ export function calcPiastrelle(i: PiastrelleInput): CalcOutcome<PiastrelleResult
   const m2ConScarto = withWaste(i.superficie, i.scarto);
   const scatole = ceilSafe(m2ConScarto / i.m2Scatola);
   const m2Acquistati = scatole * i.m2Scatola;
+  const costo = i.prezzoM2 ? m2Acquistati * i.prezzoM2 : null;
+  const costoPosa = laborCost(i.superficie, i.prezzoPosaM2);
   return {
     ok: true,
     result: {
@@ -57,7 +64,9 @@ export function calcPiastrelle(i: PiastrelleInput): CalcOutcome<PiastrelleResult
       m2Acquistati,
       piastrellePerScatola: Math.max(1, Math.round(i.m2Scatola / areaPiastrella)),
       avanzo: m2Acquistati - m2ConScarto,
-      costo: i.prezzoM2 ? m2Acquistati * i.prezzoM2 : null,
+      costo,
+      costoPosa,
+      costoTotale: sumCosts(costo, costoPosa),
     },
   };
 }
@@ -76,8 +85,10 @@ export function presentPiastrelle(i: PiastrelleInput, r: PiastrelleResult): Pres
       perScatola: `circa ${int(r.piastrellePerScatola)}`,
       scarto: `${fmt(i.scarto, 1)}%`,
       costo: r.costo !== null ? euro(r.costo) : '',
+      costoPosa: r.costoPosa !== null ? euro(r.costoPosa) : '',
+      costoTotale: r.costoTotale !== null ? euro(r.costoTotale) : '',
     },
-    flags: { costo: r.costo !== null },
+    flags: { costo: r.costo !== null, posa: r.costoPosa !== null },
   };
 }
 
@@ -87,7 +98,9 @@ export function summaryPiastrelle(i: PiastrelleInput, r: PiastrelleResult): stri
     `Superficie con scarto: ${fmt(r.m2ConScarto, 2)} m²`,
     `Piastrelle necessarie: ${int(r.piastrelle)}`,
     `Scatole da acquistare: ${int(r.scatole)} (${fmt(r.m2Acquistati, 2)} m²)`,
-    r.costo !== null ? `Spesa stimata: ${euro(r.costo)} (${euro(i.prezzoM2 ?? 0)}/m²)` : '',
+    r.costo !== null ? `Spesa stimata piastrelle: ${euro(r.costo)} (${euro(i.prezzoM2 ?? 0)}/m²)` : '',
+    r.costoPosa !== null ? `Manodopera posa: ${euro(r.costoPosa)} (${euro(i.prezzoPosaM2 ?? 0)}/m²)` : '',
+    r.costoPosa !== null && r.costoTotale !== null ? `Spesa totale con la posa: ${euro(r.costoTotale)}` : '',
   ]
     .filter(Boolean)
     .join('\n');

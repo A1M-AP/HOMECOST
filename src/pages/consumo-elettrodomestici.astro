@@ -5,7 +5,7 @@ import AffiliateBox from '../components/AffiliateBox.astro';
 import { APPLIANCES, calcEnergia, presentEnergia, type EnergiaInput } from '../lib/calc/energia';
 import { currentPrices } from '../lib/istat-data';
 
-const { prices, note: priceNote } = currentPrices();
+const { prices, note: priceNote } = currentPrices(['elettricita']);
 const ENERGY_PRICE_DEFAULT = prices.energiaKwh;
 import { euro, fmt } from '../lib/format';
 

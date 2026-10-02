@@ -6,7 +6,7 @@ import { BOARD_HEIGHTS, calcCartongesso, presentCartongesso, type CartongessoInp
 import { fmt } from '../lib/format';
 import { currentPrices } from '../lib/istat-data';
 
-const { prices, note: priceNote } = currentPrices();
+const { prices, note: priceNote } = currentPrices(['materiali', 'manodopera']);
 
 const defaults: CartongessoInput = {
   lunghezza: 4,
@@ -18,6 +18,7 @@ const defaults: CartongessoInput = {
   aperture: 0,
   scarto: 10,
   prezzi: prices.cartongesso,
+  prezzoPosaM2: prices.posa.cartongessoM2,
 };
 const outcome = calcCartongesso(defaults);
 if (!outcome.ok) throw new Error('Valori predefiniti non validi');
@@ -104,14 +105,17 @@ const faq = [
   </fieldset>
 
   <details class="advanced">
-    <summary>Prezzi e spesa stimata</summary>
-    <p class="hint">{priceNote} La spesa si calcola quando tutti i prezzi sono compilati.</p>
+    <summary>Prezzi, montaggio e spesa stimata</summary>
+    <p class="hint">{priceNote} La spesa dei materiali si calcola quando tutti i prezzi sono compilati.</p>
     <div class="fields fields--3">
       <Field id="pLastra" label="Lastra" unit="€/pz" optional value={prices.cartongesso.lastra} max={1000} />
       <Field id="pGuida" label="Guida 3 m" unit="€/pz" optional value={prices.cartongesso.guida} max={1000} />
       <Field id="pMontante" label="Montante 3 m" unit="€/pz" optional value={prices.cartongesso.montante} max={1000} />
       <Field id="pViti" label="Viti (100 pz)" unit="€" optional value={prices.cartongesso.viti100} max={1000} />
       <Field id="pTassello" label="Tassello" unit="€/pz" optional value={prices.cartongesso.tassello} max={100} />
+    </div>
+    <div class="fields" style="margin-top:14px">
+      <Field id="posaM2" label="Montaggio" unit="€/m²" optional value={prices.posa.cartongessoM2} max={1000} hint="Manodopera per m² di parete e per lato rivestito, stuccatura compresa. Lascia vuoto se fai da te." />
     </div>
   </details>
 
@@ -129,6 +133,10 @@ const faq = [
       <div class="kpi kpi--cost" data-show="costo" hidden={!p.flags?.costo}>
         <dt>Spesa stimata materiali</dt>
         <dd><span data-out="costo">{p.text.costo}</span><small>lastre, profili, viti e tasselli</small></dd>
+      </div>
+      <div class="kpi kpi--cost" data-show="posa" hidden={!p.flags?.posa}>
+        <dt>Con il montaggio</dt>
+        <dd><span data-out="costoTotale">{p.text.costoTotale}</span><small>di cui manodopera <span data-out="costoPosa">{p.text.costoPosa}</span></small></dd>
       </div>
     </dl>
     <dl class="details">
@@ -280,6 +288,7 @@ const faq = [
         [v.pLastra, v.pGuida, v.pMontante, v.pViti, v.pTassello].every((x) => x !== null)
           ? { lastra: v.pLastra!, guida: v.pGuida!, montante: v.pMontante!, viti100: v.pViti!, tassello: v.pTassello! }
           : null,
+      prezzoPosaM2: v.posaM2,
     }),
     compute: calcCartongesso,
     present: presentCartongesso,

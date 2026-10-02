@@ -35,7 +35,9 @@ npm run check      # controllo dei tipi TypeScript e dei componenti Astro
 
 ```
 public/
-  data/istat-foi.json      indici ISTAT FOI (da aggiornare a mano ogni mese)
+  data/istat-foi.json      indici ISTAT FOI (aggiornati in automatico)
+  data/istat-prezzi.json   indici ISTAT NIC per voce di spesa: elettricità, materiali, manodopera (automatici)
+  data/ipab.json           indice ISTAT dei prezzi delle abitazioni (automatico)
   _headers                 header HTTP e cache (Netlify e Cloudflare Pages)
   img/, favicon, og-image  immagini statiche
 src/
@@ -43,7 +45,7 @@ src/
     site.ts                dati del sito, prezzo energia predefinito, analytics, pubblicità, banner cookie
     affiliates.ts          TUTTI i link e i testi di affiliazione (file unico)
     calculators.ts         elenco dei calcolatori (menu, homepage, footer, correlati, sitemap)
-    prices.ts              prezzi base delle stime di spesa (rivalutati con l'indice ISTAT)
+    prices.ts              prezzi base di materiali e manodopera (rivalutati con gli indici ISTAT)
   lib/
     format.ts              lettura e formattazione dei numeri all'italiana
     calc/*.ts              formule pure di ogni calcolatore (testate in tests/)
@@ -56,7 +58,7 @@ src/
   pages/                   una pagina per URL
   styles/global.css        stile unico, mobile-first, senza framework
 tests/calc.test.ts         test unitari delle formule
-scripts/update-istat.mjs   download automatico degli indici ISTAT FOI e IPAB (usato da GitHub Actions)
+scripts/update-istat.mjs   download automatico degli indici ISTAT FOI, IPAB e NIC (usato da GitHub Actions)
 scripts/build-omi.mjs      conversione dei CSV OMI in public/data/omi/
 .github/workflows/         workflow giornaliero di aggiornamento ISTAT
 netlify.toml               configurazione Netlify
@@ -127,18 +129,28 @@ e Torino. A ogni nuova pubblicazione trimestrale le quotazioni OMI vengono ripor
 
 ## Prezzi e stime di spesa
 
-I calcolatori di pittura, piastrelle, cartongesso, parquet e consumi mostrano una **spesa stimata** calcolata con
-prezzi medi indicativi, che l'utente può modificare. I prezzi base sono in **`src/config/prices.ts`**, riferiti al
-mese `PRICE_BASE_MONTH`, e a ogni build vengono rivalutati con la variazione dell'indice ISTAT FOI tra quel mese e
-l'ultimo disponibile:
+I calcolatori di pittura, piastrelle, cartongesso, parquet e consumi mostrano la **spesa dei materiali** e, dove
+serve un professionista, la **spesa con la posa** (manodopera di imbianchino, piastrellista, cartongessista,
+posatore). Sono prezzi medi indicativi che l'utente può modificare o svuotare (per esempio se fa da sé).
+
+I prezzi base sono in **`src/config/prices.ts`**, riferiti al mese `PRICE_BASE_MONTH`. L'ISTAT non pubblica
+prezzi in euro di questi prodotti ma **indici dei prezzi**: a ogni build ogni prezzo viene rivalutato con l'indice
+della sua voce di spesa, dal mese base all'ultimo mese disponibile:
 
 ```
 prezzo mostrato = prezzo base × (indice ultimo mese ÷ indice del mese dei prezzi base)
 ```
 
-Finché l'indice del mese base non è pubblicato il coefficiente vale 1. Se aggiorni i prezzi base con listini
-reali, aggiorna anche `PRICE_BASE_MONTH`. Nota: l'indice generale FOI misura l'inflazione media; per l'energia
-elettrica, che segue il mercato, il prezzo resta comunque solo indicativo.
+| Prezzi                                  | Indice ISTAT NIC (base 2025, `public/data/istat-prezzi.json`)                     |
+| --------------------------------------- | --------------------------------------------------------------------------------- |
+| Energia elettrica (€/kWh)               | 04510 Elettricità                                                                  |
+| Pittura, piastrelle, cartongesso, parquet, battiscopa | 04311 Prodotti per la manutenzione e la riparazione dell'abitazione |
+| Manodopera (posa e montaggio)           | 04320 Servizi per la manutenzione e la riparazione dell'abitazione                 |
+
+Gli indici NIC si scaricano ogni giorno con lo stesso workflow del FOI (dataflow `167_745_DF_DCSP_NIC1B2025_4`); prima
+di salvarli lo script confronta le variazioni mensili con quelle ufficiali ISTAT. Se l'indice di una voce manca
+per il mese base si usa l'indice generale FOI. Finché l'indice del mese base non è pubblicato il coefficiente vale 1.
+Se aggiorni i prezzi base con listini reali, aggiorna anche `PRICE_BASE_MONTH`.
 
 ## Link di affiliazione
 

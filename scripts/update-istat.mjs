@@ -3,7 +3,9 @@
  * Aggiorna con i dati ufficiali ISTAT:
  * - public/data/istat-foi.json: indici FOI senza tabacchi (affitti, prezzi dei materiali);
  * - public/data/ipab.json: indice dei prezzi delle abitazioni esistenti (IPAB) per area e grandi città,
- *   usato dal calcolatore "Quanto vale la mia casa".
+ *   usato dal calcolatore "Quanto vale la mia casa";
+ * - public/data/istat-prezzi.json: indici NIC per voce di spesa (elettricità, materiali e servizi per
+ *   la manutenzione della casa), usati per aggiornare i prezzi e le stime di spesa dei calcolatori.
  *
  * Fonte: API SDMX dell'ISTAT (https://esploradati.istat.it/SDMXWS/rest).
  * - dal 2026: base 2025=100 (dataflow 169_748_DF_DCSP_FOI1B2025_1, tipo dato 101);
@@ -38,6 +40,16 @@ export const IPAB_AREE = {
   ITC11: 'TORINO',
 };
 const IPAB_START = '2015-Q1';
+
+// NIC mensile base 2025=100 per voce di spesa ECOICOP v2 (5 cifre), dal 2026
+const FLOW_NIC = 'IT1,167_745_DF_DCSP_NIC1B2025_4,1.0';
+const PREZZI_FILE = fileURLToPath(new URL('../public/data/istat-prezzi.json', import.meta.url));
+/** Codice ECOICOP → voce usata dal sito (src/config/prices.ts). */
+export const NIC_VOCI = {
+  '04510': 'elettricita', // Elettricità
+  '04311': 'materiali', // Prodotti per la manutenzione e la riparazione dell'abitazione
+  '04320': 'manodopera', // Servizi per la manutenzione, la riparazione e la sicurezza dell'abitazione
+};
 
 const FLOW_NEW = 'IT1,169_748_DF_DCSP_FOI1B2025_1,1.0'; // base 2025, dal 2026
 const FLOW_OLD = 'IT1,169_748_DF_DCSP_FOI1B2025_2,1.0'; // basi precedenti, fino al 2025
@@ -106,6 +118,38 @@ export function validateIpab(byArea, today = new Date()) {
     const [ly, lq] = keys.at(-1).split('-Q').map(Number);
     const ageMonths = (today.getFullYear() - ly) * 12 + (today.getMonth() + 1 - lq * 3);
     if (ageMonths > 9) throw new Error(`Ultimo trimestre IPAB troppo vecchio per ${code}: ${keys.at(-1)}`);
+  }
+}
+
+/** Variazione congiunturale (sul mese prima) arrotondata a un decimale. */
+export function mom(series, month) {
+  const [y, m] = month.split('-').map(Number);
+  const prev = series[m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`];
+  const cur = series[month];
+  if (!prev || !cur) return null;
+  return Math.round((cur / prev - 1) * 1000) / 10;
+}
+
+/** Controlli sulle serie NIC per voce: tutte le voci, mesi consecutivi dal 2026-01, valori plausibili, dati recenti. */
+export function validatePrezzi(byCode, today = new Date()) {
+  for (const code of Object.keys(NIC_VOCI)) {
+    const s = byCode[code];
+    if (!s) throw new Error(`Serie NIC mancante per ${code}`);
+    const keys = Object.keys(s).sort();
+    if (keys[0] !== NEW_START) throw new Error(`La serie ${code} non parte da ${NEW_START}`);
+    for (const [k, v] of Object.entries(s)) {
+      if (!/^\d{4}-\d{2}$/.test(k)) throw new Error(`Periodo non valido ${k}`);
+      if (!(v > 50 && v < 250)) throw new Error(`Valore non plausibile ${code} ${k}: ${v}`);
+    }
+    for (let i = 1; i < keys.length; i++) {
+      const [y1, m1] = keys[i - 1].split('-').map(Number);
+      const [y2, m2] = keys[i].split('-').map(Number);
+      if ((y2 - y1) * 12 + (m2 - m1) !== 1) throw new Error(`Mesi non consecutivi per ${code}: ${keys[i - 1]} → ${keys[i]}`);
+    }
+    const [ly, lm] = keys.at(-1).split('-').map(Number);
+    if ((today.getFullYear() - ly) * 12 + (today.getMonth() + 1 - lm) > 4) {
+      throw new Error(`Ultimo mese troppo vecchio per ${code}: ${keys.at(-1)}`);
+    }
   }
 }
 
@@ -234,10 +278,58 @@ async function updateIpab(dryRun) {
   console.log(`Scritto ${IPAB_FILE}`);
 }
 
+async function updatePrezzi(dryRun) {
+  const codes = Object.keys(NIC_VOCI).join('+');
+  const index = parseSeriesBy(await fetchXml(FLOW_NIC, `M.IT.85.4.${codes}`, NEW_START), 'ECOICOP_2');
+  validatePrezzi(index);
+  const official = parseSeriesBy(await fetchXml(FLOW_NIC, `M.IT.85.6.${codes}`, NEW_START).catch(() => ''), 'ECOICOP_2');
+
+  // Confronto con le variazioni congiunturali ufficiali ISTAT (indici arrotondati: tolleranza 0,15 punti)
+  let checked = 0;
+  for (const [code, series] of Object.entries(official)) {
+    for (const [month, value] of Object.entries(series)) {
+      const computed = mom(index[code] ?? {}, month);
+      if (computed === null) continue;
+      checked++;
+      if (Math.abs(computed - value) > 0.15) throw new Error(`Variazione NIC ${code} ${month} non coerente: ${computed}% contro ${value}%`);
+    }
+  }
+  console.log(`NIC: ${checked} variazioni mensili confrontate con quelle ufficiali`);
+  if (!checked) console.warn('Attenzione: nessuna variazione NIC ufficiale disponibile per il confronto.');
+
+  const series = {};
+  for (const [code, key] of Object.entries(NIC_VOCI)) {
+    series[key] = Object.fromEntries(Object.entries(index[code]).sort(([a], [b]) => a.localeCompare(b)));
+  }
+  let current = {};
+  try {
+    current = JSON.parse(readFileSync(PREZZI_FILE, 'utf8'));
+  } catch {
+    /* primo aggiornamento */
+  }
+  const strip = (o) => Object.fromEntries(Object.entries(o).filter(([k]) => !k.startsWith('_')));
+  const changed = JSON.stringify(strip(current)) !== JSON.stringify(series);
+  for (const [key, s] of Object.entries(series)) {
+    const last = Object.keys(s).at(-1);
+    console.log(`NIC ${key}: ultimo mese ${last} = ${s[last]}`);
+  }
+  console.log(`NIC: ${changed ? 'dati cambiati' : 'nessuna novità'}`);
+  if (!changed || dryRun) return;
+  const output = {
+    _istruzioni:
+      'File aggiornato in automatico da scripts/update-istat.mjs (GitHub Actions). Indici dei prezzi al consumo NIC per voce di spesa (ECOICOP v2), base 2025=100, mensili. Chiavi: elettricita (04510), materiali (04311), manodopera (04320).',
+    _fonte: 'ISTAT - Prezzi al consumo per l’intera collettività (NIC) - https://esploradati.istat.it/',
+    _aggiornato: new Date().toISOString().slice(0, 10),
+    ...series,
+  };
+  writeFileSync(PREZZI_FILE, `${JSON.stringify(output, null, 1)}\n`);
+  console.log(`Scritto ${PREZZI_FILE}`);
+}
+
 async function main() {
   const dryRun = process.argv.includes('--dry-run');
   const errors = [];
-  for (const [name, job] of [['FOI', updateFoi], ['IPAB', updateIpab]]) {
+  for (const [name, job] of [['FOI', updateFoi], ['IPAB', updateIpab], ['NIC', updatePrezzi]]) {
     try {
       await job(dryRun);
     } catch (e) {

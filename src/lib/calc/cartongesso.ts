@@ -3,7 +3,7 @@
  * Valori indicativi: i sistemi dei produttori possono prevedere quantità diverse.
  */
 import { euro, fmt, int } from '../format.ts';
-import { ceilSafe, withWaste, type CalcOutcome, type Presentation } from './utils.ts';
+import { ceilSafe, laborCost, sumCosts, withWaste, type CalcOutcome, type Presentation } from './utils.ts';
 
 /** Larghezza standard delle lastre (m). */
 export const BOARD_WIDTH = 1.2;
@@ -33,6 +33,8 @@ export interface CartongessoInput {
   scarto: number;
   /** Prezzi facoltativi per la spesa stimata. */
   prezzi?: CartongessoPrices | null;
+  /** Manodopera per il montaggio, € per m² di parete e per lato rivestito (facoltativa). */
+  prezzoPosaM2?: number | null;
 }
 
 export interface CartongessoPrices {
@@ -64,6 +66,9 @@ export interface CartongessoResult {
   /** Barre di montante da acquistare (più barre se la parete supera 3 m). */
   montantiBarre: number;
   costo: number | null;
+  /** Manodopera stimata (m² di parete × lati × prezzo), null senza prezzo. */
+  costoPosa: number | null;
+  costoTotale: number | null;
 }
 
 export function calcCartongesso(i: CartongessoInput): CalcOutcome<CartongessoResult> {
@@ -90,6 +95,7 @@ export function calcCartongesso(i: CartongessoInput): CalcOutcome<CartongessoRes
   const costo = p
     ? lastre * p.lastra + guideBarre * p.guida + montantiBarre * p.montante + Math.ceil(viti / 100) * p.viti100 + tasselli * p.tassello
     : null;
+  const costoPosa = laborCost(areaParete * i.lati, i.prezzoPosaM2);
 
   return {
     ok: true,
@@ -108,6 +114,8 @@ export function calcCartongesso(i: CartongessoInput): CalcOutcome<CartongessoRes
       lastraPiuBassaDellaParete: i.altezza > i.altezzaLastra + 1e-9,
       montantiBarre,
       costo,
+      costoPosa,
+      costoTotale: sumCosts(costo, costoPosa),
     },
   };
 }
@@ -127,12 +135,15 @@ export function presentCartongesso(i: CartongessoInput, r: CartongessoResult): P
       viti: `circa ${int(r.viti)}`,
       tasselli: `circa ${int(r.tasselli)}`,
       costo: r.costo !== null ? euro(r.costo) : '',
+      costoPosa: r.costoPosa !== null ? euro(r.costoPosa) : '',
+      costoTotale: r.costoTotale !== null ? euro(r.costoTotale) : '',
     },
     flags: {
       montantiOltreBarra: r.montantiOltreBarra,
       lastraPiuAlta: r.lastraPiuAltaDellaParete,
       lastraPiuBassa: r.lastraPiuBassaDellaParete,
       costo: r.costo !== null,
+      posa: r.costoPosa !== null,
     },
   };
 }
@@ -146,6 +157,8 @@ export function summaryCartongesso(i: CartongessoInput, r: CartongessoResult): s
     `Montanti a C: ${int(r.montanti)} da ${fmt(i.altezza, 2)} m (${fmt(r.montantiMetri, 1)} m)`,
     `Viti per lastre: circa ${int(r.viti)} – tasselli per guide: circa ${int(r.tasselli)}`,
     r.costo !== null ? `Spesa stimata materiali: ${euro(r.costo)}` : '',
+    r.costoPosa !== null ? `Manodopera montaggio: ${euro(r.costoPosa)} (${euro(i.prezzoPosaM2 ?? 0)}/m² per lato)` : '',
+    r.costoPosa !== null && r.costoTotale !== null ? `Spesa totale con la posa: ${euro(r.costoTotale)}` : '',
     'Stima indicativa: verifica le quantità con il sistema del produttore.',
   ]
     .filter(Boolean)
