@@ -1,4 +1,4 @@
-# TEMPORANEO: esplorazione dei sottoindici FOI per voce di spesa. Da rimuovere.
+# TEMPORANEO: esplorazione dei sottoindici ISTAT per voce di spesa. Da rimuovere.
 name: Esplora sottoindici ISTAT
 on:
   push:
@@ -7,7 +7,7 @@ on:
 jobs:
   explore:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/setup-node@v4
         with:
@@ -17,24 +17,24 @@ jobs:
           cat > x.mjs <<'JS'
           const API = 'https://esploradati.istat.it/SDMXWS/rest';
           const ACCEPT = 'application/vnd.sdmx.structurespecificdata+xml;version=2.1';
-          async function get(url, accept) {
-            const r = await fetch(url, { headers: accept ? { Accept: accept } : {}, signal: AbortSignal.timeout(240000) });
-            console.log(r.status, url);
-            return r.text();
+          async function get(url, accept, ms = 600000) {
+            try {
+              const r = await fetch(url, { headers: accept ? { Accept: accept } : {}, signal: AbortSignal.timeout(ms) });
+              console.log(r.status, url);
+              return await r.text();
+            } catch (e) { console.log('ERR', url, e.message); return ''; }
           }
-          const st = await get(`${API}/dataflow/IT1/169_748_DF_DCSP_FOI1B2025_1/1.0?references=all&detail=full`);
-          console.log('structure bytes', st.length);
-          for (const cl of st.matchAll(/<(?:\w+:)?Codelist\b[^>]*id="([^"]+)"[\s\S]*?<\/(?:\w+:)?Codelist>/g)) {
-            const codes = [...cl[0].matchAll(/<(?:\w+:)?Code\b[^>]*id="([^"]+)"[^>]*>[\s\S]*?<(?:\w+:)?Name xml:lang="it">([^<]*)</g)];
-            console.log(`== Codelist ${cl[1]} (${codes.length})`);
-            const filt = codes.length > 60 ? codes.filter(c => /^(00|04|05|09|12)/.test(c[1])) : codes;
-            for (const c of filt.slice(0, 400)) console.log(`  ${c[1]}  ${c[2]}`);
+          // 1. DBnomics: dataset ISTAT sui prezzi
+          for (const q of ['NIC', 'FOI', 'IPCA', 'costo di costruzione', 'prezzi al consumo']) {
+            const t = await get(`https://api.db.nomics.world/v22/search?q=${encodeURIComponent(q)}&limit=100`, null, 60000);
+            try {
+              for (const d of JSON.parse(t).results.docs) if (d.provider_code === 'ISTAT') console.log('DBN', q, '|', d.code, '|', d.name);
+            } catch {}
           }
-          for (const dim of st.matchAll(/<(?:\w+:)?Dimension\b[^>]*id="([^"]+)"[^>]*position="(\d+)"/g)) console.log('DIM', dim[2], dim[1]);
-          const data = await get(`${API}/data/IT1,169_748_DF_DCSP_FOI1B2025_1,1.0/M.IT.101.4.?startPeriod=2026-06`, ACCEPT);
-          for (const s of data.matchAll(/<Series\b([^>]*)>([\s\S]*?)<\/Series>/g)) {
-            const obs = [...s[2].matchAll(/TIME_PERIOD="([^"]+)"[^>]*OBS_VALUE="([^"]+)"|OBS_VALUE="([^"]+)"[^>]*TIME_PERIOD="([^"]+)"/g)].map(o => `${o[1]||o[4]}=${o[2]||o[3]}`);
-            if (/"0[0-9]?[0-9]?[0-9]?ST"|"04|"05|"00/.test(s[1])) console.log('SERIE', s[1].trim(), obs.join(' '));
+          // 2. Elenco dataflow ISTAT
+          const all = await get(`${API}/dataflow/IT1/all/latest`);
+          for (const m of all.matchAll(/<(?:\w+:)?Dataflow\b[^>]*id="([^"]+)"[\s\S]*?<(?:\w+:)?Name xml:lang="it">([^<]*)</g)) {
+            if (/NIC|FOI|IPCA|COSTR|CCR|PREZ/i.test(m[1] + m[2])) console.log('FLOW', m[1], '|', m[2]);
           }
           JS
           node x.mjs
