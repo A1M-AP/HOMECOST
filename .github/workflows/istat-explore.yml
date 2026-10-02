@@ -24,17 +24,25 @@ jobs:
               return await r.text();
             } catch (e) { console.log('ERR', url, e.message); return ''; }
           }
-          // 1. DBnomics: dataset ISTAT sui prezzi
-          for (const q of ['NIC', 'FOI', 'IPCA', 'costo di costruzione', 'prezzi al consumo']) {
-            const t = await get(`https://api.db.nomics.world/v22/search?q=${encodeURIComponent(q)}&limit=100`, null, 60000);
-            try {
-              for (const d of JSON.parse(t).results.docs) if (d.provider_code === 'ISTAT') console.log('DBN', q, '|', d.code, '|', d.name);
-            } catch {}
-          }
-          // 2. Elenco dataflow ISTAT
-          const all = await get(`${API}/dataflow/IT1/all/latest`);
-          for (const m of all.matchAll(/<(?:\w+:)?Dataflow\b[^>]*id="([^"]+)"[\s\S]*?<(?:\w+:)?Name xml:lang="it">([^<]*)</g)) {
-            if (/NIC|FOI|IPCA|COSTR|CCR|PREZ/i.test(m[1] + m[2])) console.log('FLOW', m[1], '|', m[2]);
+          for (const flow of ['167_745_DF_DCSP_NIC1B2025_4', '167_745_DF_DCSP_NIC1B2025_3']) {
+            const st = await get(`${API}/dataflow/IT1/${flow}/1.0?references=all&detail=full`);
+            for (const dim of st.matchAll(/<(?:\w+:)?Dimension\b[^>]*id="([^"]+)"[^>]*position="(\d+)"/g)) console.log('DIM', flow, dim[2], dim[1]);
+            const names = {};
+            for (const cl of st.matchAll(/<(?:\w+:)?Codelist\b[^>]*id="([^"]+)"[\s\S]*?<\/(?:\w+:)?Codelist>/g)) {
+              const codes = [...cl[0].matchAll(/<(?:\w+:)?Code\b[^>]*id="([^"]+)"[^>]*>[\s\S]*?<(?:\w+:)?Name xml:lang="it">([^<]*)</g)];
+              console.log(`== ${flow} Codelist ${cl[1]} (${codes.length})`);
+              if (codes.length < 40) for (const c of codes) console.log(`  ${c[1]}  ${c[2]}`);
+              for (const c of codes) names[c[1]] = c[2];
+            }
+            const data = await get(`${API}/data/IT1,${flow},1.0/M.IT..4.?startPeriod=2026-01`, ACCEPT);
+            let n = 0;
+            for (const s of data.matchAll(/<Series\b([^>]*)>([\s\S]*?)<\/Series>/g)) {
+              n++;
+              const code = /ECOICOP[^=]*="([^"]+)"/.exec(s[1])?.[1] ?? '';
+              const obs = [...s[2].matchAll(/<Obs\b([^>]*)\/?>/g)].map(o => `${/TIME_PERIOD="([^"]+)"/.exec(o[1])?.[1]}=${/OBS_VALUE="([^"]+)"/.exec(o[1])?.[1]}`);
+              if (/^(00|04|043|045|0431|0432|0451|055|0551|0552)/.test(code)) console.log('SERIE', s[1].trim(), '|', names[code], '|', obs.join(' '));
+            }
+            console.log('serie totali', flow, n);
           }
           JS
           node x.mjs
