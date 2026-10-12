@@ -39,6 +39,7 @@ public/
   data/istat-prezzi.json   indici ISTAT NIC per voce di spesa: elettricità, materiali, manodopera (automatici)
   data/ipab.json           indice ISTAT dei prezzi delle abitazioni (automatico)
   _headers                 header HTTP e cache (Netlify e Cloudflare Pages)
+  fonts/                   font Plus Jakarta Sans self-hosted (licenza SIL OFL, nessuna richiesta a Google)
   img/, favicon, og-image  immagini statiche
 src/
   config/

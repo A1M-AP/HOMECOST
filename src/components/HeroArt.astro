@@ -1,0 +1,63 @@
+---
+/**
+ * Composizione astratta della homepage: forme geometriche che fluttuano attorno a una casa stilizzata.
+ * Solo SVG in linea e CSS (nessuna immagine da scaricare); le animazioni rispettano "riduci movimento".
+ */
+import Icon from './Icon.astro';
+---
+<div class="hero-art" aria-hidden="true">
+  <svg class="hero-svg" viewBox="0 0 440 400" width="440" height="400" focusable="false">
+    <defs>
+      <linearGradient id="hg-a" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#14b8a6" />
+        <stop offset="1" stop-color="#1d4f91" />
+      </linearGradient>
+      <linearGradient id="hg-b" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#fdba74" />
+        <stop offset="1" stop-color="#f97316" />
+      </linearGradient>
+      <linearGradient id="hg-c" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0" stop-color="#c4b5fd" />
+        <stop offset="1" stop-color="#f0abfc" />
+      </linearGradient>
+      <pattern id="hg-dots" width="16" height="16" patternUnits="userSpaceOnUse">
+        <circle cx="2" cy="2" r="1.6" fill="#0f766e" opacity=".22" />
+      </pattern>
+    </defs>
+
+    <rect class="ha-dots" x="250" y="20" width="170" height="130" rx="18" fill="url(#hg-dots)" />
+    <circle class="ha-ring" cx="92" cy="96" r="54" fill="none" stroke="#1d4f91" stroke-width="2" stroke-dasharray="4 10" opacity=".45" />
+
+    <g class="ha-float ha-f1">
+      <rect x="96" y="120" width="230" height="230" rx="56" fill="url(#hg-a)" />
+    </g>
+    <g class="ha-float ha-f2">
+      <circle cx="330" cy="112" r="46" fill="url(#hg-b)" />
+    </g>
+    <g class="ha-float ha-f3">
+      <path d="M40 300a70 70 0 0 1 70-70v70H40Z" fill="url(#hg-c)" />
+    </g>
+
+    <!-- Casa stilizzata disegnata a tratto -->
+    <g class="ha-house" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+      <path class="ha-draw" d="M146 238 211 184l65 54" />
+      <path class="ha-draw ha-draw-2" d="M162 226v74h98v-74" />
+    </g>
+    <rect class="ha-door" x="198" y="258" width="26" height="42" rx="5" fill="#fdba74" />
+
+    <g class="ha-float ha-f4">
+      <rect x="352" y="250" width="56" height="56" rx="14" fill="none" stroke="#f97316" stroke-width="3" />
+    </g>
+    <g class="ha-spark" fill="#0f766e">
+      <path d="M58 182l4 11 11 4-11 4-4 11-4-11-11-4 11-4 4-11Z" />
+      <path d="M392 196l2.5 6.5 6.5 2.5-6.5 2.5-2.5 6.5-2.5-6.5-6.5-2.5 6.5-2.5 2.5-6.5Z" opacity=".7" />
+    </g>
+    <circle class="ha-dot ha-d1" cx="300" cy="352" r="9" fill="#1d4f91" />
+    <circle class="ha-dot ha-d2" cx="70" cy="356" r="6" fill="#f97316" />
+    <circle class="ha-dot ha-d3" cx="236" cy="70" r="7" fill="#14b8a6" />
+  </svg>
+
+  <div class="hero-chip hc-1"><span class="accent-amber"><Icon name="energia" /></span>Bolletta</div>
+  <div class="hero-chip hc-2"><span class="accent-violet"><Icon name="valore" /></span>Valore casa</div>
+  <div class="hero-chip hc-3"><span class="accent-teal"><Icon name="trend" /></span>Dati ISTAT</div>
+</div>

@@ -61,11 +61,13 @@ const jsonLd = [
 const today = new Intl.DateTimeFormat('it-IT', { dateStyle: 'long' }).format(new Date());
 ---
 <BaseLayout title={title} description={description} jsonLd={jsonLd}>
-  <div class="container">
+  <div class={`container calc-page accent-${calc.accent}`}>
     <Breadcrumbs items={[{ name: 'Home', path: '/' }, { name: calc.name, path: calc.path }]} />
     <div class="layout-calc">
       <div class="calc-main">
         <header class="page-head">
+          <div class="page-head-deco" aria-hidden="true"><span></span><span></span></div>
+          <span class="page-icon" aria-hidden="true"><Icon name={calc.icon} /></span>
           <h1>{h1}</h1>
           <p class="lead">{lead}</p>
         </header>
@@ -123,8 +125,11 @@ const today = new Intl.DateTimeFormat('it-IT', { dateStyle: 'long' }).format(new
           <ul>
             {
               CALCULATORS.filter((c) => c.id !== calc.id).map((c) => (
-                <li>
-                  <a href={c.path}>{c.name}</a>
+                <li class={`accent-${c.accent}`}>
+                  <a href={c.path}>
+                    <span class="side-icon" aria-hidden="true"><Icon name={c.icon} /></span>
+                    {c.name}
+                  </a>
                 </li>
               ))
             }

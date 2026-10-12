@@ -1,5 +1,6 @@
 ---
 import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Icon from '../components/Icon.astro';
 import Field from '../components/Field.astro';
 import ProductBox from '../components/ProductBox.astro';
 import { BOARD_HEIGHTS, calcCartongesso, presentCartongesso, type CartongessoInput } from '../lib/calc/cartongesso';
@@ -66,7 +67,7 @@ const faq = [
   </div>
 
   <fieldset class="form-group">
-    <legend>Tipo di parete</legend>
+    <legend><Icon name="wall" class="legend-icon" />Tipo di parete</legend>
     <div class="choices">
       <label class="choice"><input type="radio" name="lati" value="2" checked /><span>Parete divisoria (2 lati)</span></label>
       <label class="choice"><input type="radio" name="lati" value="1" /><span>Controparete (1 lato)</span></label>
@@ -74,7 +75,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Rivestimento</legend>
+    <legend><Icon name="layers" class="legend-icon" />Rivestimento</legend>
     <div class="choices">
       <label class="choice"><input type="radio" name="strati" value="1" checked /><span>Lastra singola per lato</span></label>
       <label class="choice"><input type="radio" name="strati" value="2" /><span>Doppia lastra per lato</span></label>
@@ -82,7 +83,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Lastre e profili</legend>
+    <legend><Icon name="ruler" class="legend-icon" />Lastre e profili</legend>
     <div class="fields">
       <div class="field">
         <label for="formato">Formato lastra</label>

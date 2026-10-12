@@ -96,7 +96,7 @@ const faq = [
   </div>
 
   <fieldset class="form-group">
-    <legend>Decorrenza del contratto</legend>
+    <legend><Icon name="calendar" class="legend-icon" />Decorrenza del contratto</legend>
     <div class="fields">
       <div class="field">
         <label for="inizioMese">Mese</label>
@@ -109,7 +109,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Aggiornamento del canone</legend>
+    <legend><Icon name="receipt" class="legend-icon" />Aggiornamento del canone</legend>
     <div class="fields">
       <div class="field">
         <label for="aggMese">Mese</label>
@@ -134,7 +134,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Variazione ISTAT</legend>
+    <legend><Icon name="trend" class="legend-icon" />Variazione ISTAT</legend>
     <p class="data-status" data-istat-status>{describeData(data)}</p>
     <div class="choices">
       <label class="choice"><input type="radio" name="fonte" value="indici" checked={hasData} /><span>Calcolala dagli indici FOI</span></label>
@@ -155,7 +155,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Percentuale della variazione da applicare</legend>
+    <legend><Icon name="percent" class="legend-icon" />Percentuale della variazione da applicare</legend>
     <div class="choices">
       <label class="choice"><input type="radio" name="percentuale" value="75" checked /><span>75%</span></label>
       <label class="choice"><input type="radio" name="percentuale" value="100" /><span>100%</span></label>
@@ -163,7 +163,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Il locatore ha scelto la cedolare secca?</legend>
+    <legend><Icon name="euro" class="legend-icon" />Il locatore ha scelto la cedolare secca?</legend>
     <div class="choices">
       <label class="choice"><input type="radio" name="cedolare" value="no" checked /><span>No</span></label>
       <label class="choice"><input type="radio" name="cedolare" value="si" /><span>Sì</span></label>

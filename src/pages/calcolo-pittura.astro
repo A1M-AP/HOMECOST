@@ -1,5 +1,6 @@
 ---
 import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Icon from '../components/Icon.astro';
 import Field from '../components/Field.astro';
 import ProductBox from '../components/ProductBox.astro';
 import { calcPittura, presentPittura, type PitturaInput } from '../lib/calc/pittura';
@@ -64,7 +65,7 @@ const faq = [
   faq={faq}
   copyTitle="Calcolo pittura"
 >
-  <p class="subgroup-title">Misure della stanza</p>
+  <p class="subgroup-title"><Icon name="ruler" class="legend-icon" />Misure della stanza</p>
   <div class="fields fields--row3">
     <Field id="lunghezza" label="Lunghezza" unit="m" value={defaults.lunghezza} positive max={100} />
     <Field id="larghezza" label="Larghezza" unit="m" value={defaults.larghezza} positive max={100} />
@@ -72,7 +73,7 @@ const faq = [
   </div>
 
   <fieldset class="form-group">
-    <legend>Porte</legend>
+    <legend><Icon name="door" class="legend-icon" />Porte</legend>
     <div class="fields fields--row3">
       <Field id="porteN" label="Numero" value={defaults.porteN} integer max={30} />
       <Field id="porteLarghezza" label="Larghezza" unit="m" value={defaults.porteLarghezza} positive max={10} />
@@ -81,7 +82,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Finestre</legend>
+    <legend><Icon name="window" class="legend-icon" />Finestre</legend>
     <div class="fields fields--row3">
       <Field id="finestreN" label="Numero" value={defaults.finestreN} integer max={30} />
       <Field id="finestreLarghezza" label="Larghezza" unit="m" value={defaults.finestreLarghezza} positive max={10} />
@@ -90,7 +91,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Pittura</legend>
+    <legend><Icon name="droplet" class="legend-icon" />Pittura</legend>
     <label class="check">
       <input type="checkbox" name="soffitto" checked={defaults.soffitto} />
       <span>Pitturo anche il soffitto</span>

@@ -1,5 +1,6 @@
 ---
 import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Icon from '../components/Icon.astro';
 import Field from '../components/Field.astro';
 import ProductBox from '../components/ProductBox.astro';
 import { calcPiastrelle, presentPiastrelle, TILE_WASTE, type PiastrelleInput } from '../lib/calc/piastrelle';
@@ -71,7 +72,7 @@ const faq = [
   </div>
 
   <fieldset class="form-group">
-    <legend>Piastrelle</legend>
+    <legend><Icon name="grid" class="legend-icon" />Piastrelle</legend>
     <div class="fields fields--row3">
       <Field id="latoA" label="Lato A" unit="cm" value={defaults.latoA} positive max={400} />
       <Field id="latoB" label="Lato B" unit="cm" value={defaults.latoB} positive max={400} />
@@ -81,7 +82,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Tipo di posa</legend>
+    <legend><Icon name="rotate" class="legend-icon" />Tipo di posa</legend>
     <div class="choices">
       <label class="choice"><input type="radio" name="posa" value="dritta" checked /><span>Dritta (scarto {TILE_WASTE.dritta}%)</span></label>
       <label class="choice"><input type="radio" name="posa" value="diagonale" /><span>Diagonale (scarto {TILE_WASTE.diagonale}%)</span></label>

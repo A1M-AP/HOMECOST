@@ -1,5 +1,6 @@
 ---
 import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Icon from '../components/Icon.astro';
 import Field from '../components/Field.astro';
 import ProductBox from '../components/ProductBox.astro';
 import { calcParquet, estimatePerimeter, presentParquet, PARQUET_WASTE, type ParquetInput } from '../lib/calc/parquet';
@@ -83,7 +84,7 @@ const faq = [
   </div>
 
   <fieldset class="form-group">
-    <legend>Tipo di posa</legend>
+    <legend><Icon name="rotate" class="legend-icon" />Tipo di posa</legend>
     <div class="choices">
       <label class="choice"><input type="radio" name="posa" value="dritta" checked /><span>Dritta</span></label>
       <label class="choice"><input type="radio" name="posa" value="diagonale" /><span>Diagonale</span></label>
@@ -103,7 +104,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Battiscopa</legend>
+    <legend><Icon name="ruler" class="legend-icon" />Battiscopa</legend>
     <div class="fields">
       <Field
         id="porte"
