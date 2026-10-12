@@ -1,8 +1,12 @@
 ---
 import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Icon from '../components/Icon.astro';
 import Field from '../components/Field.astro';
 import ProductBox from '../components/ProductBox.astro';
 import { calcPittura, presentPittura, type PitturaInput } from '../lib/calc/pittura';
+import { currentPrices } from '../lib/istat-data';
+
+const { prices, note: priceNote } = currentPrices(['materiali', 'manodopera']);
 
 const defaults: PitturaInput = {
   lunghezza: 4,
@@ -18,6 +22,8 @@ const defaults: PitturaInput = {
   mani: 2,
   resa: 10,
   scarto: 10,
+  prezzi: prices.pittura,
+  prezzoPosaM2: prices.posa.pitturaM2,
 };
 const outcome = calcPittura(defaults);
 if (!outcome.ok) throw new Error('Valori predefiniti non validi');
@@ -59,7 +65,7 @@ const faq = [
   faq={faq}
   copyTitle="Calcolo pittura"
 >
-  <p class="subgroup-title">Misure della stanza</p>
+  <p class="subgroup-title"><Icon name="ruler" class="legend-icon" />Misure della stanza</p>
   <div class="fields fields--row3">
     <Field id="lunghezza" label="Lunghezza" unit="m" value={defaults.lunghezza} positive max={100} />
     <Field id="larghezza" label="Larghezza" unit="m" value={defaults.larghezza} positive max={100} />
@@ -67,7 +73,7 @@ const faq = [
   </div>
 
   <fieldset class="form-group">
-    <legend>Porte</legend>
+    <legend><Icon name="door" class="legend-icon" />Porte</legend>
     <div class="fields fields--row3">
       <Field id="porteN" label="Numero" value={defaults.porteN} integer max={30} />
       <Field id="porteLarghezza" label="Larghezza" unit="m" value={defaults.porteLarghezza} positive max={10} />
@@ -76,7 +82,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Finestre</legend>
+    <legend><Icon name="window" class="legend-icon" />Finestre</legend>
     <div class="fields fields--row3">
       <Field id="finestreN" label="Numero" value={defaults.finestreN} integer max={30} />
       <Field id="finestreLarghezza" label="Larghezza" unit="m" value={defaults.finestreLarghezza} positive max={10} />
@@ -85,7 +91,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Pittura</legend>
+    <legend><Icon name="droplet" class="legend-icon" />Pittura</legend>
     <label class="check">
       <input type="checkbox" name="soffitto" checked={defaults.soffitto} />
       <span>Pitturo anche il soffitto</span>
@@ -99,12 +105,15 @@ const faq = [
   </fieldset>
 
   <details class="advanced">
-    <summary>Opzioni avanzate: prezzi dei barattoli</summary>
-    <p class="hint">Facoltativo: con i prezzi dei tre formati calcoliamo la combinazione più economica.</p>
+    <summary>Prezzi, manodopera e spesa stimata</summary>
+    <p class="hint">{priceNote} Modificali con i prezzi del tuo negozio: calcoliamo la combinazione più economica.</p>
     <div class="fields fields--row3">
-      <Field id="p25" label="2,5 L" unit="€" optional />
-      <Field id="p5" label="5 L" unit="€" optional />
-      <Field id="p10" label="10 L" unit="€" optional />
+      <Field id="p25" label="2,5 L" unit="€" optional value={prices.pittura[2.5]} />
+      <Field id="p5" label="5 L" unit="€" optional value={prices.pittura[5]} />
+      <Field id="p10" label="10 L" unit="€" optional value={prices.pittura[10]} />
+    </div>
+    <div class="fields" style="margin-top:14px">
+      <Field id="posaM2" label="Manodopera imbianchino" unit="€/m²" optional value={prices.posa.pitturaM2} max={1000} hint="Prezzo al m² per tutte le mani, pittura esclusa. Lascia vuoto se fai da te." />
     </div>
   </details>
 
@@ -118,6 +127,14 @@ const faq = [
       <div class="kpi">
         <dt>Superficie da pitturare</dt>
         <dd><span data-out="superficie">{p.text.superficie}</span><small data-out="mani">{p.text.mani}</small></dd>
+      </div>
+      <div class="kpi kpi--cost" data-show="costo" hidden={!p.flags?.costo}>
+        <dt>Spesa pittura</dt>
+        <dd><span data-out="comboCosto">{p.text.comboCosto}</span><small>prezzi medi aggiornati con gli indici ISTAT</small></dd>
+      </div>
+      <div class="kpi kpi--cost" data-show="posa" hidden={!p.flags?.posa}>
+        <dt>Con un imbianchino</dt>
+        <dd><span data-out="costoTotale">{p.text.costoTotale}</span><small>di cui manodopera <span data-out="costoPosa">{p.text.costoPosa}</span></small></dd>
       </div>
     </dl>
     <dl class="details">
@@ -262,6 +279,7 @@ const faq = [
       resa: v.resa!,
       scarto: v.scarto!,
       prezzi: { 2.5: v.p25 ?? undefined, 5: v.p5 ?? undefined, 10: v.p10 ?? undefined },
+      prezzoPosaM2: v.posaM2,
     }),
     compute: calcPittura,
     present: presentPittura,

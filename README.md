@@ -5,6 +5,7 @@ Costruito con [Astro](https://astro.build): nessun backend, tutti i calcoli avve
 
 | Pagina | Calcolatore |
 | --- | --- |
+| `/quanto-vale-la-mia-casa/` | Stima del valore di mercato di una casa (quotazioni OMI + indice ISTAT) |
 | `/consumo-elettrodomestici/` | Costo in bolletta di un elettrodomestico |
 | `/calcolo-pittura/` | Litri e barattoli di pittura |
 | `/calcolo-piastrelle/` | Piastrelle e scatole |
@@ -34,25 +35,33 @@ npm run check      # controllo dei tipi TypeScript e dei componenti Astro
 
 ```
 public/
-  data/istat-foi.json      indici ISTAT FOI (da aggiornare a mano ogni mese)
+  data/istat-foi.json      indici ISTAT FOI (aggiornati in automatico)
+  data/istat-prezzi.json   indici ISTAT NIC per voce di spesa: elettricità, materiali, manodopera (automatici)
+  data/ipab.json           indice ISTAT dei prezzi delle abitazioni (automatico)
   _headers                 header HTTP e cache (Netlify e Cloudflare Pages)
+  fonts/                   font Plus Jakarta Sans self-hosted (licenza SIL OFL, nessuna richiesta a Google)
   img/, favicon, og-image  immagini statiche
 src/
   config/
     site.ts                dati del sito, prezzo energia predefinito, analytics, pubblicità, banner cookie
     affiliates.ts          TUTTI i link e i testi di affiliazione (file unico)
     calculators.ts         elenco dei calcolatori (menu, homepage, footer, correlati, sitemap)
+    prices.ts              prezzi base di materiali e manodopera (rivalutati con gli indici ISTAT)
   lib/
     format.ts              lettura e formattazione dei numeri all'italiana
     calc/*.ts              formule pure di ogni calcolatore (testate in tests/)
   scripts/
     calc-engine.ts         validazione, ricalcolo in tempo reale, "Copia risultato", "Stampa"
     consent.ts             gestione del consenso cookie e caricamento degli script dopo il consenso
+    motion.ts              animazioni (comparsa allo scroll, numeri che scorrono)
   components/              Header, Footer, AffiliateBox, ProductBox, AdSlot, FAQ, Field, CookieBanner…
   layouts/                 BaseLayout (SEO, Open Graph), CalculatorLayout, PageLayout
   pages/                   una pagina per URL
   styles/global.css        stile unico, mobile-first, senza framework
 tests/calc.test.ts         test unitari delle formule
+scripts/update-istat.mjs   download automatico degli indici ISTAT FOI, IPAB e NIC (usato da GitHub Actions)
+scripts/build-omi.mjs      conversione dei CSV OMI in public/data/omi/
+.github/workflows/         workflow giornaliero di aggiornamento ISTAT
 netlify.toml               configurazione Netlify
 wrangler.jsonc             configurazione Cloudflare Workers
 ```
@@ -66,39 +75,83 @@ Ogni calcolatore è diviso in due parti:
 
 ---
 
-## Aggiornare gli indici ISTAT
+## Indici ISTAT: aggiornamento automatico
 
-Il calcolatore dell'affitto legge gli indici da **`public/data/istat-foi.json`**. Il file contiene per ora solo
-**segnaposto** (`"DA AGGIORNARE CON DATI UFFICIALI ISTAT"`): finché non inserisci dati reali, la pagina chiede
-all'utente di digitare la variazione percentuale a mano.
+Gli indici **FOI senza tabacchi** sono in `public/data/istat-foi.json` e si aggiornano da soli:
 
-1. Scarica gli indici **FOI senza tabacchi** dal sito ISTAT (<https://www.istat.it/>, sezione prezzi al consumo;
-   in alternativa dal servizio Rivaluta o dalla banca dati dell'Istituto).
-2. Apri `public/data/istat-foi.json` e scrivi un mese per riga nel formato `"AAAA-MM": valore`, con il **punto** come
-   separatore decimale e **senza virgolette** attorno al numero. Sostituisci i segnaposto.
-3. Aggiorna `"_aggiornato"` con la data di oggi (`AAAA-MM-GG`): viene mostrata nella pagina.
-4. Pubblica (commit + push: Netlify o Cloudflare ricostruiscono il sito da soli).
+1. ogni giorno il workflow GitHub Actions `.github/workflows/istat-update.yml` esegue
+   `scripts/update-istat.mjs`, che scarica gli indici dall'API ufficiale SDMX dell'ISTAT
+   (<https://esploradati.istat.it/>);
+2. se ci sono dati nuovi (l'ISTAT pubblica il FOI verso metà mese) il workflow fa un commit su `main`;
+3. Cloudflare ripubblica il sito: il calcolatore dell'affitto usa i nuovi indici e i **prezzi di tutti i
+   calcolatori vengono rivalutati** (vedi sotto).
 
-Esempio di struttura (i numeri qui sotto sono **finti**, non usarli):
+Dettagli tecnici:
 
-```json
-{
-  "_aggiornato": "2026-10-16",
-  "2025-09": 100.0,
-  "2026-09": 101.5
-}
+- dal 2026 l'ISTAT pubblica il FOI in **base 2025=100**; i mesi fino a dicembre 2025 (base 2015=100) sono
+  riportati in base 2025 dividendoli per il **coefficiente di raccordo** (media 2025 in base 2015 ÷ 100), così
+  le variazioni a cavallo del cambio di base sono corrette;
+- prima di scrivere il file lo script confronta le variazioni annue calcolate con quelle **ufficiali pubblicate
+  dall'ISTAT**: se non coincidono, o se i dati sono incompleti o non plausibili, termina con errore e non
+  modifica nulla (GitHub ti avvisa via e-mail del workflow fallito);
+- puoi lanciarlo a mano da GitHub → Actions → "Aggiorna indici ISTAT" → "Run workflow", oppure in locale con
+  `node scripts/update-istat.mjs` (`--dry-run` per vedere i dati senza scrivere);
+- le chiavi che iniziano con `_` sono note (fonte, base, data di aggiornamento mostrata nella pagina);
+- se il mese che serve all'utente non è ancora pubblicato, la pagina permette di inserire la variazione a mano.
+
+Aggiornamento manuale (solo se serve): scrivi `"AAAA-MM": valore` con il punto decimale, tutti nella stessa base,
+e aggiorna `"_aggiornato"` (`AAAA-MM-GG`).
+
+## Quanto vale la mia casa: dati OMI e indice ISTAT
+
+Il calcolatore stima il valore di mercato con il metodo sintetico-comparativo:
+superficie commerciale (DPR 138/1998) × quotazione OMI della zona × coefficienti (stato, piano, classe energetica)
+× aggiornamento con l'indice ISTAT dei prezzi delle abitazioni esistenti (IPAB).
+
+**Quotazioni OMI** (`public/data/omi/`): un file JSON per provincia con, per ogni comune e zona OMI, il prezzo
+minimo e massimo al m² di abitazioni civili, economiche, signorili, ville e box (stato "normale"). Sono generati da
+`scripts/build-omi.mjs` a partire dai CSV ufficiali dell'Agenzia delle Entrate. Attualmente contengono il
+**2° semestre 2018**, l'ultimo semestre disponibile senza credenziali (raccolta di [onData](https://github.com/ondata/quotazioni-immobiliari-agenzia-entrate)).
+
+Per usare un semestre recente (consigliato, gratuito):
+
+1. accedi all'area riservata dell'Agenzia delle Entrate (SPID/CIE) → Servizi → "Forniture dati OMI" →
+   "Quotazioni immobiliari" e scarica l'ultimo semestre per tutta Italia;
+2. esegui `node scripts/build-omi.mjs QI_..._VALORI.csv QI_..._ZONE.csv`;
+3. fai commit di `public/data/omi/`: il sito usa subito il nuovo semestre e l'aggiornamento ISTAT riparte da lì.
+
+Fonte da citare (già indicata nella pagina): "Agenzia Entrate - OMI". La licenza dei dati OMI non è una licenza
+aperta standard: verifica le condizioni d'uso dell'Agenzia per un sito con pubblicità.
+
+**Aggiornamento automatico** (`public/data/ipab.json`): lo stesso workflow giornaliero degli indici FOI scarica
+dall'API ISTAT l'indice IPAB delle abitazioni esistenti per Nord-ovest, Nord-est, Centro, Sud e Isole, Roma, Milano
+e Torino. A ogni nuova pubblicazione trimestrale le quotazioni OMI vengono riportate all'ultimo trimestre:
+`quotazione aggiornata = quotazione OMI × IPAB ultimo trimestre ÷ IPAB medio del semestre OMI`.
+
+## Prezzi e stime di spesa
+
+I calcolatori di pittura, piastrelle, cartongesso, parquet e consumi mostrano la **spesa dei materiali** e, dove
+serve un professionista, la **spesa con la posa** (manodopera di imbianchino, piastrellista, cartongessista,
+posatore). Sono prezzi medi indicativi che l'utente può modificare o svuotare (per esempio se fa da sé).
+
+I prezzi base sono in **`src/config/prices.ts`**, riferiti al mese `PRICE_BASE_MONTH`. L'ISTAT non pubblica
+prezzi in euro di questi prodotti ma **indici dei prezzi**: a ogni build ogni prezzo viene rivalutato con l'indice
+della sua voce di spesa, dal mese base all'ultimo mese disponibile:
+
+```
+prezzo mostrato = prezzo base × (indice ultimo mese ÷ indice del mese dei prezzi base)
 ```
 
-Note:
+| Prezzi                                  | Indice ISTAT NIC (base 2025, `public/data/istat-prezzi.json`)                     |
+| --------------------------------------- | --------------------------------------------------------------------------------- |
+| Energia elettrica (€/kWh)               | 04510 Elettricità                                                                  |
+| Pittura, piastrelle, cartongesso, parquet, battiscopa | 04311 Prodotti per la manutenzione e la riparazione dell'abitazione |
+| Manodopera (posa e montaggio)           | 04320 Servizi per la manutenzione e la riparazione dell'abitazione                 |
 
-- Le chiavi che iniziano con `_` sono note e vengono ignorate; i valori non numerici sono trattati come mancanti.
-- Per calcolare la variazione servono **due mesi**: il mese di riferimento e lo stesso mese dell'anno precedente.
-  Conviene quindi tenere nel file almeno gli ultimi 24 mesi.
-- La variazione viene arrotondata a un decimale, come nelle tabelle ISTAT.
-- Tutti i valori devono avere **la stessa base**. Quando l'ISTAT cambia base, converti i valori con i coefficienti di
-  raccordo pubblicati dall'Istituto, oppure lascia che l'utente inserisca la variazione ufficiale a mano.
-- Appena il file contiene dati reali, alla build successiva la pagina propone in automatico la modalità
-  "Calcolala dagli indici FOI".
+Gli indici NIC si scaricano ogni giorno con lo stesso workflow del FOI (dataflow `167_745_DF_DCSP_NIC1B2025_4`); prima
+di salvarli lo script confronta le variazioni mensili con quelle ufficiali ISTAT. Se l'indice di una voce manca
+per il mese base si usa l'indice generale FOI. Finché l'indice del mese base non è pubblicato il coefficiente vale 1.
+Se aggiorni i prezzi base con listini reali, aggiorna anche `PRICE_BASE_MONTH`.
 
 ## Link di affiliazione
 
@@ -107,7 +160,8 @@ Tutto è in **`src/config/affiliates.ts`**:
 - `AMAZON_TAG`: il tuo ID di tracciamento Amazon (es. `homecost-21`). Sostituisce `AFFILIATE_TAG` in tutti i link
   `amazon.it/...&tag=...`.
 - `AFFILIATE_BOXES`: i box "call to action". `energia` compare sotto il calcolatore dei consumi
-  ("Stai pagando troppo l'energia? Confronta le offerte luce e gas"), `assicurazioneCasa` sotto quello ISTAT.
+  ("Stai pagando troppo l'energia? Confronta le offerte luce e gas"); `assicurazioneCasa` (sotto il calcolatore
+  ISTAT) è al momento disattivato.
   Per ognuno puoi cambiare titolo, testo, pulsante e URL, o nasconderlo con `enabled: false`.
 - `PRODUCTS`: le 3 schede "Prodotti consigliati" di pittura, piastrelle, cartongesso e parquet. Per ogni prodotto:
   - `query`: ricerca su Amazon (predefinita);
@@ -199,7 +253,7 @@ Dopo la pubblicazione, invia `https://homecost.it/sitemap.xml` a Google Search C
 ### Prima del lancio: checklist
 
 - [ ] `AMAZON_TAG` e URL dei box di affiliazione (ora puntano a `example.com`) in `src/config/affiliates.ts`
-- [ ] Indici ISTAT reali in `public/data/istat-foi.json`
+- [ ] Prezzi base indicativi in `src/config/prices.ts` (verificali con listini reali)
 - [ ] E-mail e dati del titolare (`src/config/site.ts`, `/contatti/`, pagine legali)
 - [ ] Testi di privacy policy, cookie policy e note legali: completare le parti `[DA COMPLETARE]` e farle verificare
 - [ ] ID AdSense / Analytics (facoltativi) e, per AdSense, `ads.txt` e CMP certificata

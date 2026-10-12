@@ -1,9 +1,10 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import CalcTile from '../components/CalcTile.astro';
+import HeroArt from '../components/HeroArt.astro';
 import Icon from '../components/Icon.astro';
 import { CALCULATORS } from '../config/calculators';
-import { SITE } from '../config/site';
+import { OWNER, SITE } from '../config/site';
 
 const jsonLd = [
   {
@@ -21,6 +22,7 @@ const jsonLd = [
     url: `${SITE.url}/`,
     logo: `${SITE.url}/apple-touch-icon.png`,
     email: SITE.email,
+    parentOrganization: { '@type': 'Organization', name: OWNER.name },
   },
   {
     '@context': 'https://schema.org',
@@ -40,38 +42,61 @@ const jsonLd = [
   description="Calcolatori gratuiti e senza registrazione per casa ed energia: costo in bolletta degli elettrodomestici, pittura, piastrelle, cartongesso, parquet e aggiornamento ISTAT dell’affitto."
   jsonLd={jsonLd}
 >
-  <section class="container hero">
-    <h1>Calcolatori gratuiti per casa ed energia</h1>
-    <p class="lead">
-      Scopri quanto ti costa davvero un elettrodomestico, quanta pittura o quante piastrelle comprare e di quanto
-      aggiornare l’affitto. Risultati immediati, spiegati in modo semplice.
-    </p>
-    <ul class="hero-badges">
-      <li><Icon name="gift" /> Gratis</li>
-      <li><Icon name="check" /> Senza registrazione</li>
-      <li><Icon name="lock" /> Calcoli nel tuo browser</li>
-    </ul>
+  <section class="hero">
+    <div class="hero-bg" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="container hero-inner">
+      <div class="hero-copy">
+        <p class="eyebrow"><Icon name="sparkles" /> {CALCULATORS.length} calcolatori · prezzi aggiornati con l’ISTAT</p>
+        <h1>Calcolatori gratuiti per <span class="grad-text">casa ed energia</span></h1>
+        <p class="lead">
+          Scopri quanto ti costa davvero un elettrodomestico, quanta pittura o quante piastrelle comprare, quanto vale
+          la tua casa e di quanto aggiornare l’affitto. Risultati immediati, spiegati in modo semplice.
+        </p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="#calcolatori">Inizia a calcolare <Icon name="arrow" /></a>
+          <a class="btn btn-ghost btn-lg" href="/quanto-vale-la-mia-casa/"><Icon name="valore" /> Quanto vale casa mia?</a>
+        </div>
+        <ul class="hero-badges">
+          <li><Icon name="gift" /> Gratis</li>
+          <li><Icon name="check" /> Senza registrazione</li>
+          <li><Icon name="lock" /> Calcoli nel tuo browser</li>
+        </ul>
+      </div>
+      <HeroArt />
+    </div>
   </section>
 
-  <section class="container section" aria-labelledby="calc-title" style="padding-top:16px">
-    <h2 id="calc-title" class="sr-only">Tutti i calcolatori</h2>
+  <section class="container section" id="calcolatori" aria-labelledby="calc-title">
+    <h2 id="calc-title" class="section-title"><span class="section-kicker">Strumenti</span>Scegli il calcolatore</h2>
     <ul class="calc-grid">
       {CALCULATORS.map((c) => <li><CalcTile calc={c} headingLevel="h3" /></li>)}
+      <li class="cta-cell">
+        <article class="calc-tile calc-tile--cta accent-teal">
+          <span class="tile-shape" aria-hidden="true"></span>
+          <span class="tile-icon"><Icon name="sparkles" /></span>
+          <h3><a href="/contatti/">Ti manca un calcolatore?</a></h3>
+          <p>Dicci quale strumento vorresti trovare su HomeCost: i più richiesti arrivano per primi.</p>
+          <span class="more" aria-hidden="true">Suggeriscilo <Icon name="arrow" /></span>
+        </article>
+      </li>
     </ul>
   </section>
 
   <section class="container section" aria-labelledby="why-title">
-    <h2 id="why-title">Perché usare HomeCost</h2>
+    <h2 id="why-title" class="section-title"><span class="section-kicker">Perché noi</span>Perché usare HomeCost</h2>
     <ul class="features">
       <li>
+        <span class="feature-icon accent-amber"><Icon name="sparkles" /></span>
         <h3>Numeri chiari, subito</h3>
         <p>Il risultato si aggiorna mentre scrivi, con tutti i passaggi del calcolo e le formule spiegate sotto ogni strumento.</p>
       </li>
       <li>
+        <span class="feature-icon accent-blue"><Icon name="trend" /></span>
         <h3>Pensato per l’Italia</h3>
-        <p>Prezzi in euro, formati dei materiali in commercio, indice ISTAT FOI e le regole dei contratti di affitto italiani.</p>
+        <p>Prezzi in euro aggiornati ogni giorno con gli indici ISTAT, formati dei materiali in commercio e le regole dei contratti di affitto italiani.</p>
       </li>
       <li>
+        <span class="feature-icon accent-teal"><Icon name="lock" /></span>
         <h3>I tuoi dati restano tuoi</h3>
         <p>Nessun account e nessun invio al server: tutti i calcoli avvengono direttamente nel tuo dispositivo.</p>
       </li>
@@ -79,7 +104,12 @@ const jsonLd = [
   </section>
 
   <section class="container section prose" aria-labelledby="how-title" style="margin-top:0">
-    <h2 id="how-title">Come funzionano i calcolatori</h2>
+    <h2 id="how-title" class="section-title"><span class="section-kicker">In tre passi</span>Come funzionano i calcolatori</h2>
+    <ol class="how-steps">
+      <li><span class="accent-violet"><Icon name="cursor" /></span><strong>Scegli lo strumento</strong>Parti dai valori di esempio già compilati.</li>
+      <li><span class="accent-rose"><Icon name="ruler" /></span><strong>Inserisci i tuoi dati</strong>Misure, consumi o canone: il risultato si aggiorna mentre scrivi.</li>
+      <li><span class="accent-blue"><Icon name="print" /></span><strong>Salva il risultato</strong>Copialo o stampalo e portalo in negozio.</li>
+    </ol>
     <p>
       Ogni strumento parte da valori di esempio già compilati, così vedi subito come funziona. Sostituiscili con le tue
       misure o con i dati della tua bolletta: il risultato si aggiorna in tempo reale. Con i pulsanti “Copia risultato” e

@@ -12,3 +12,7 @@
 # Indici ISTAT: cache breve, così gli aggiornamenti mensili sono subito visibili.
 /data/*
   Cache-Control: public, max-age=300, must-revalidate
+
+# Font (nome stabile, cambia solo con un nuovo file): cache di un mese.
+/fonts/*
+  Cache-Control: public, max-age=2592000

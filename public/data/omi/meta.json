@@ -1,0 +1,522 @@
+{
+ "fonte": "Agenzia Entrate - OMI",
+ "semestre": "2018-2",
+ "generato": "2026-10-01",
+ "province": [
+  {
+   "s": "AG",
+   "r": "Sicilia",
+   "n": 43
+  },
+  {
+   "s": "AL",
+   "r": "Piemonte",
+   "n": 190
+  },
+  {
+   "s": "AN",
+   "r": "Marche",
+   "n": 47
+  },
+  {
+   "s": "AO",
+   "r": "Valle D'Aosta/vallee D'Aoste",
+   "n": 74
+  },
+  {
+   "s": "AP",
+   "r": "Marche",
+   "n": 68
+  },
+  {
+   "s": "AQ",
+   "r": "Abruzzo",
+   "n": 105
+  },
+  {
+   "s": "AR",
+   "r": "Toscana",
+   "n": 36
+  },
+  {
+   "s": "AT",
+   "r": "Piemonte",
+   "n": 118
+  },
+  {
+   "s": "AV",
+   "r": "Campania",
+   "n": 118
+  },
+  {
+   "s": "BA",
+   "r": "Puglia",
+   "n": 48
+  },
+  {
+   "s": "BG",
+   "r": "Lombardia",
+   "n": 243
+  },
+  {
+   "s": "BI",
+   "r": "Piemonte",
+   "n": 82
+  },
+  {
+   "s": "BL",
+   "r": "Veneto",
+   "n": 63
+  },
+  {
+   "s": "BN",
+   "r": "Campania",
+   "n": 78
+  },
+  {
+   "s": "BO",
+   "r": "Emilia-Romagna",
+   "n": 55
+  },
+  {
+   "s": "BR",
+   "r": "Puglia",
+   "n": 20
+  },
+  {
+   "s": "BS",
+   "r": "Lombardia",
+   "n": 203
+  },
+  {
+   "s": "BZ",
+   "r": "Trentino-Alto Adige",
+   "n": 116
+  },
+  {
+   "s": "CA",
+   "r": "Sardegna",
+   "n": 109
+  },
+  {
+   "s": "CB",
+   "r": "Molise",
+   "n": 84
+  },
+  {
+   "s": "CE",
+   "r": "Campania",
+   "n": 102
+  },
+  {
+   "s": "CH",
+   "r": "Abruzzo",
+   "n": 104
+  },
+  {
+   "s": "CL",
+   "r": "Sicilia",
+   "n": 22
+  },
+  {
+   "s": "CN",
+   "r": "Piemonte",
+   "n": 250
+  },
+  {
+   "s": "CO",
+   "r": "Lombardia",
+   "n": 149
+  },
+  {
+   "s": "CR",
+   "r": "Lombardia",
+   "n": 115
+  },
+  {
+   "s": "CS",
+   "r": "Calabria",
+   "n": 154
+  },
+  {
+   "s": "CT",
+   "r": "Sicilia",
+   "n": 58
+  },
+  {
+   "s": "CZ",
+   "r": "Calabria",
+   "n": 79
+  },
+  {
+   "s": "EN",
+   "r": "Sicilia",
+   "n": 20
+  },
+  {
+   "s": "FE",
+   "r": "Emilia-Romagna",
+   "n": 24
+  },
+  {
+   "s": "FG",
+   "r": "Puglia",
+   "n": 63
+  },
+  {
+   "s": "FI",
+   "r": "Toscana",
+   "n": 42
+  },
+  {
+   "s": "FO",
+   "r": "Emilia-Romagna",
+   "n": 30
+  },
+  {
+   "s": "FR",
+   "r": "Lazio",
+   "n": 91
+  },
+  {
+   "s": "GE",
+   "r": "Liguria",
+   "n": 67
+  },
+  {
+   "s": "GO",
+   "r": "Friuli-Venezia Giulia",
+   "n": 25
+  },
+  {
+   "s": "GR",
+   "r": "Toscana",
+   "n": 28
+  },
+  {
+   "s": "IM",
+   "r": "Liguria",
+   "n": 67
+  },
+  {
+   "s": "IS",
+   "r": "Molise",
+   "n": 52
+  },
+  {
+   "s": "KR",
+   "r": "Calabria",
+   "n": 26
+  },
+  {
+   "s": "LC",
+   "r": "Lombardia",
+   "n": 85
+  },
+  {
+   "s": "LE",
+   "r": "Puglia",
+   "n": 97
+  },
+  {
+   "s": "LI",
+   "r": "Toscana",
+   "n": 19
+  },
+  {
+   "s": "LO",
+   "r": "Lombardia",
+   "n": 60
+  },
+  {
+   "s": "LT",
+   "r": "Lazio",
+   "n": 33
+  },
+  {
+   "s": "LU",
+   "r": "Toscana",
+   "n": 33
+  },
+  {
+   "s": "MC",
+   "r": "Marche",
+   "n": 29
+  },
+  {
+   "s": "ME",
+   "r": "Sicilia",
+   "n": 108
+  },
+  {
+   "s": "MI",
+   "r": "Lombardia",
+   "n": 189
+  },
+  {
+   "s": "MN",
+   "r": "Lombardia",
+   "n": 66
+  },
+  {
+   "s": "MO",
+   "r": "Emilia-Romagna",
+   "n": 47
+  },
+  {
+   "s": "MS",
+   "r": "Toscana",
+   "n": 17
+  },
+  {
+   "s": "MT",
+   "r": "Basilicata",
+   "n": 31
+  },
+  {
+   "s": "NA",
+   "r": "Campania",
+   "n": 92
+  },
+  {
+   "s": "NO",
+   "r": "Piemonte",
+   "n": 88
+  },
+  {
+   "s": "NU",
+   "r": "Sardegna",
+   "n": 66
+  },
+  {
+   "s": "OR",
+   "r": "Sardegna",
+   "n": 78
+  },
+  {
+   "s": "PA",
+   "r": "Sicilia",
+   "n": 82
+  },
+  {
+   "s": "PC",
+   "r": "Emilia-Romagna",
+   "n": 48
+  },
+  {
+   "s": "PD",
+   "r": "Veneto",
+   "n": 102
+  },
+  {
+   "s": "PE",
+   "r": "Abruzzo",
+   "n": 46
+  },
+  {
+   "s": "PG",
+   "r": "Umbria",
+   "n": 49
+  },
+  {
+   "s": "PI",
+   "r": "Toscana",
+   "n": 37
+  },
+  {
+   "s": "PN",
+   "r": "Friuli-Venezia Giulia",
+   "n": 50
+  },
+  {
+   "s": "PO",
+   "r": "Toscana",
+   "n": 7
+  },
+  {
+   "s": "PR",
+   "r": "Emilia-Romagna",
+   "n": 45
+  },
+  {
+   "s": "PS",
+   "r": "Marche",
+   "n": 54
+  },
+  {
+   "s": "PT",
+   "r": "Toscana",
+   "n": 20
+  },
+  {
+   "s": "PV",
+   "r": "Lombardia",
+   "n": 188
+  },
+  {
+   "s": "PZ",
+   "r": "Basilicata",
+   "n": 100
+  },
+  {
+   "s": "RA",
+   "r": "Emilia-Romagna",
+   "n": 18
+  },
+  {
+   "s": "RC",
+   "r": "Calabria",
+   "n": 97
+  },
+  {
+   "s": "RE",
+   "r": "Emilia-Romagna",
+   "n": 45
+  },
+  {
+   "s": "RG",
+   "r": "Sicilia",
+   "n": 12
+  },
+  {
+   "s": "RI",
+   "r": "Lazio",
+   "n": 67
+  },
+  {
+   "s": "RM",
+   "r": "Lazio",
+   "n": 120
+  },
+  {
+   "s": "RN",
+   "r": "Emilia-Romagna",
+   "n": 25
+  },
+  {
+   "s": "RO",
+   "r": "Veneto",
+   "n": 50
+  },
+  {
+   "s": "SA",
+   "r": "Campania",
+   "n": 155
+  },
+  {
+   "s": "SI",
+   "r": "Toscana",
+   "n": 35
+  },
+  {
+   "s": "SO",
+   "r": "Lombardia",
+   "n": 77
+  },
+  {
+   "s": "SP",
+   "r": "Liguria",
+   "n": 32
+  },
+  {
+   "s": "SR",
+   "r": "Sicilia",
+   "n": 21
+  },
+  {
+   "s": "SS",
+   "r": "Sardegna",
+   "n": 90
+  },
+  {
+   "s": "SV",
+   "r": "Liguria",
+   "n": 69
+  },
+  {
+   "s": "TA",
+   "r": "Puglia",
+   "n": 29
+  },
+  {
+   "s": "TE",
+   "r": "Abruzzo",
+   "n": 47
+  },
+  {
+   "s": "TN",
+   "r": "Trentino-Alto Adige",
+   "n": 175
+  },
+  {
+   "s": "TO",
+   "r": "Piemonte",
+   "n": 314
+  },
+  {
+   "s": "TP",
+   "r": "Sicilia",
+   "n": 23
+  },
+  {
+   "s": "TR",
+   "r": "Umbria",
+   "n": 33
+  },
+  {
+   "s": "TS",
+   "r": "Friuli-Venezia Giulia",
+   "n": 6
+  },
+  {
+   "s": "TV",
+   "r": "Veneto",
+   "n": 32
+  },
+  {
+   "s": "UD",
+   "r": "Friuli-Venezia Giulia",
+   "n": 134
+  },
+  {
+   "s": "VA",
+   "r": "Lombardia",
+   "n": 139
+  },
+  {
+   "s": "VB",
+   "r": "Piemonte",
+   "n": 76
+  },
+  {
+   "s": "VC",
+   "r": "Piemonte",
+   "n": 83
+  },
+  {
+   "s": "VE",
+   "r": "Veneto",
+   "n": 22
+  },
+  {
+   "s": "VI",
+   "r": "Veneto",
+   "n": 52
+  },
+  {
+   "s": "VR",
+   "r": "Veneto",
+   "n": 98
+  },
+  {
+   "s": "VT",
+   "r": "Lazio",
+   "n": 60
+  },
+  {
+   "s": "VV",
+   "r": "Calabria",
+   "n": 50
+  }
+ ]
+}

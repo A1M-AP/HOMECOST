@@ -1,0 +1,43 @@
+# Aggiorna ogni giorno dall'API ufficiale ISTAT gli indici FOI (public/data/istat-foi.json),
+# dei prezzi delle abitazioni IPAB (public/data/ipab.json) e dei prezzi al consumo NIC per voce
+# di spesa (public/data/istat-prezzi.json).
+# Se ci sono dati nuovi fa un commit su main: Cloudflare ripubblica il sito e i prezzi
+# dei calcolatori vengono rivalutati in automatico.
+name: Aggiorna indici ISTAT
+
+on:
+  schedule:
+    - cron: '23 7 * * *' # ogni giorno alle 7:23 UTC (l'ISTAT pubblica i dati FOI a metà mese)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: istat-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Scarica gli indici ISTAT e aggiorna il file
+        run: node scripts/update-istat.mjs
+      - name: Commit se i dati sono cambiati
+        # Anche se un indice non si aggiorna, gli altri vengono salvati (il job resta segnato come fallito).
+        if: ${{ !cancelled() }}
+        run: |
+          if git diff --quiet -- public/data/istat-foi.json public/data/ipab.json public/data/istat-prezzi.json && [ -z "$(git status --porcelain public/data/ipab.json public/data/istat-prezzi.json)" ]; then
+            echo "Nessun nuovo dato ISTAT."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/istat-foi.json public/data/ipab.json public/data/istat-prezzi.json
+          git commit -m "Aggiorna indici ISTAT FOI, IPAB e NIC ($(date -u +%Y-%m-%d))"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

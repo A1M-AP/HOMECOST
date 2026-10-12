@@ -1,8 +1,12 @@
 ---
 import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Icon from '../components/Icon.astro';
 import Field from '../components/Field.astro';
 import ProductBox from '../components/ProductBox.astro';
 import { calcParquet, estimatePerimeter, presentParquet, PARQUET_WASTE, type ParquetInput } from '../lib/calc/parquet';
+import { currentPrices } from '../lib/istat-data';
+
+const { prices, note: priceNote } = currentPrices(['materiali', 'manodopera']);
 
 const superficie = 20;
 const defaults: ParquetInput = {
@@ -11,6 +15,10 @@ const defaults: ParquetInput = {
   scarto: PARQUET_WASTE.dritta,
   perimetro: estimatePerimeter(superficie),
   porte: 0.8,
+  prezzoM2: prices.parquetM2,
+  prezzoBattiscopa: prices.battiscopaM,
+  prezzoPosaM2: prices.posa.parquetM2,
+  prezzoPosaBattiscopa: prices.posa.battiscopaM,
 };
 const outcome = calcParquet(defaults);
 if (!outcome.ok) throw new Error('Valori predefiniti non validi');
@@ -76,7 +84,7 @@ const faq = [
   </div>
 
   <fieldset class="form-group">
-    <legend>Tipo di posa</legend>
+    <legend><Icon name="rotate" class="legend-icon" />Tipo di posa</legend>
     <div class="choices">
       <label class="choice"><input type="radio" name="posa" value="dritta" checked /><span>Dritta</span></label>
       <label class="choice"><input type="radio" name="posa" value="diagonale" /><span>Diagonale</span></label>
@@ -96,7 +104,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Battiscopa</legend>
+    <legend><Icon name="ruler" class="legend-icon" />Battiscopa</legend>
     <div class="fields">
       <Field
         id="porte"
@@ -110,6 +118,18 @@ const faq = [
     </div>
   </fieldset>
 
+  <details class="advanced">
+    <summary>Prezzi, posa e spesa stimata</summary>
+    <p class="hint">{priceNote} Inserisci i prezzi del prodotto che hai scelto e quelli del tuo posatore.</p>
+    <div class="fields">
+      <Field id="prezzoM2" label="Parquet" unit="€/m²" optional value={prices.parquetM2} max={10000} />
+      <Field id="prezzoBattiscopa" label="Battiscopa" unit="€/m" optional value={prices.battiscopaM} max={1000} />
+      <Field id="posaM2" label="Posa parquet" unit="€/m²" optional value={prices.posa.parquetM2} max={1000} />
+      <Field id="posaBattiscopa" label="Posa battiscopa" unit="€/m" optional value={prices.posa.battiscopaM} max={1000} />
+    </div>
+    <p class="hint" style="margin:6px 0 0">Lascia vuoti i campi della posa se fai da te.</p>
+  </details>
+
   <Fragment slot="result">
     <p class="result-title">Risultato</p>
     <dl class="kpis">
@@ -120,6 +140,14 @@ const faq = [
       <div class="kpi">
         <dt>Battiscopa</dt>
         <dd><span data-out="battiscopa">{p.text.battiscopa}</span><small data-out="barre">{p.text.barre}</small></dd>
+      </div>
+      <div class="kpi kpi--cost" data-show="costo" hidden={!p.flags?.costo}>
+        <dt>Spesa materiali</dt>
+        <dd><span data-out="costo">{p.text.costo}</span><small>parquet <span data-out="costoParquet">{p.text.costoParquet}</span> + battiscopa <span data-out="costoBattiscopa">{p.text.costoBattiscopa}</span></small></dd>
+      </div>
+      <div class="kpi kpi--cost" data-show="posa" hidden={!p.flags?.posa}>
+        <dt>Con la posa</dt>
+        <dd><span data-out="costoTotale">{p.text.costoTotale}</span><small>di cui manodopera <span data-out="costoPosa">{p.text.costoPosa}</span></small></dd>
       </div>
     </dl>
     <dl class="details">
@@ -265,7 +293,17 @@ const faq = [
         perimetro = estimatePerimeter(superficie);
         perimetroStimato = true;
       }
-      return { superficie, m2Confezione: v.m2Confezione!, scarto: v.scarto!, perimetro, porte: v.porte ?? 0 };
+      return {
+        superficie,
+        m2Confezione: v.m2Confezione!,
+        scarto: v.scarto!,
+        perimetro,
+        porte: v.porte ?? 0,
+        prezzoM2: v.prezzoM2,
+        prezzoBattiscopa: v.prezzoBattiscopa,
+        prezzoPosaM2: v.posaM2,
+        prezzoPosaBattiscopa: v.posaBattiscopa,
+      };
     },
     compute: calcParquet,
     present: (i, r) => presentParquet(i, r, perimetroStimato),

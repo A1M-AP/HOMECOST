@@ -96,7 +96,7 @@ const faq = [
   </div>
 
   <fieldset class="form-group">
-    <legend>Decorrenza del contratto</legend>
+    <legend><Icon name="calendar" class="legend-icon" />Decorrenza del contratto</legend>
     <div class="fields">
       <div class="field">
         <label for="inizioMese">Mese</label>
@@ -109,7 +109,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Aggiornamento del canone</legend>
+    <legend><Icon name="receipt" class="legend-icon" />Aggiornamento del canone</legend>
     <div class="fields">
       <div class="field">
         <label for="aggMese">Mese</label>
@@ -134,7 +134,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Variazione ISTAT</legend>
+    <legend><Icon name="trend" class="legend-icon" />Variazione ISTAT</legend>
     <p class="data-status" data-istat-status>{describeData(data)}</p>
     <div class="choices">
       <label class="choice"><input type="radio" name="fonte" value="indici" checked={hasData} /><span>Calcolala dagli indici FOI</span></label>
@@ -155,7 +155,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Percentuale della variazione da applicare</legend>
+    <legend><Icon name="percent" class="legend-icon" />Percentuale della variazione da applicare</legend>
     <div class="choices">
       <label class="choice"><input type="radio" name="percentuale" value="75" checked /><span>75%</span></label>
       <label class="choice"><input type="radio" name="percentuale" value="100" /><span>100%</span></label>
@@ -163,7 +163,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Il locatore ha scelto la cedolare secca?</legend>
+    <legend><Icon name="euro" class="legend-icon" />Il locatore ha scelto la cedolare secca?</legend>
     <div class="choices">
       <label class="choice"><input type="radio" name="cedolare" value="no" checked /><span>No</span></label>
       <label class="choice"><input type="radio" name="cedolare" value="si" /><span>Sì</span></label>
@@ -334,14 +334,17 @@ const faq = [
 
     <h3>Da dove arrivano gli indici</h3>
     <p>
-      Gli indici FOI usati dal calcolatore sono tratti dalle pubblicazioni ufficiali ISTAT e aggiornati a mano ogni
-      mese. {describeData(data)} Se il mese che ti serve non è ancora disponibile, scegli “Inserisco io la variazione” e
-      usa il dato pubblicato sul <a href="https://www.istat.it/" rel="noopener" target="_blank">sito dell’ISTAT</a>.
+      Gli indici FOI senza tabacchi usati dal calcolatore vengono scaricati in automatico ogni giorno dalla banca dati
+      ufficiale dell’ISTAT e, prima di essere pubblicati, le variazioni calcolate vengono confrontate con quelle
+      diffuse dall’Istituto. {describeData(data)} Se il mese che ti serve non è ancora disponibile (l’ISTAT pubblica i
+      dati verso metà del mese successivo), scegli “Inserisco io la variazione” e usa il dato pubblicato sul
+      <a href="https://www.istat.it/" rel="noopener" target="_blank">sito dell’ISTAT</a>.
     </p>
     <p>
-      Periodicamente l’ISTAT aggiorna la base di riferimento degli indici. Se i due mesi da confrontare sono espressi in
-      basi diverse, la variazione va calcolata con i coefficienti di raccordo pubblicati dall’ISTAT: in quel caso è più
-      semplice inserire direttamente la variazione percentuale ufficiale.
+      Dal 2026 l’ISTAT pubblica gli indici in base 2025=100. Per confrontare correttamente mesi espressi in basi
+      diverse, i valori fino a dicembre 2025 sono riportati nella nuova base con il coefficiente di raccordo: per
+      questo gli indici mostrati per gli anni passati possono differire da quelli delle vecchie tabelle, mentre le
+      variazioni percentuali restano le stesse.
     </p>
   </Fragment>
 </CalculatorLayout>

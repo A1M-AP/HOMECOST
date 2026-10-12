@@ -1,7 +1,7 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
 import Icon from '../components/Icon.astro';
-import { SITE } from '../config/site';
+import { SITE, ownerDetails } from '../config/site';
 ---
 <PageLayout
   title="Contatti | HomeCost"
@@ -28,7 +28,7 @@ import { SITE } from '../config/site';
     <li>Per richieste sulla privacy consulta la <a href="/privacy-policy/">privacy policy</a>.</li>
   </ul>
   <h2>Dati del titolare del sito</h2>
-  <p class="placeholder-note">
-    [DA COMPLETARE: nome e cognome o ragione sociale, indirizzo, partita IVA se presente, eventuale PEC.]
+  <p>
+    {ownerDetails()} – e-mail <a href={`mailto:${SITE.email}`}>{SITE.email}</a>
   </p>
 </PageLayout>

@@ -2,7 +2,7 @@
  * Elenco dei calcolatori: alimenta menu, homepage, footer, link correlati e sitemap.
  */
 
-export type CalculatorId = 'energia' | 'pittura' | 'piastrelle' | 'cartongesso' | 'parquet' | 'istat';
+export type CalculatorId = 'valore' | 'energia' | 'pittura' | 'piastrelle' | 'cartongesso' | 'parquet' | 'istat';
 
 export interface CalculatorInfo {
   id: CalculatorId;
@@ -15,10 +15,24 @@ export interface CalculatorInfo {
   summary: string;
   /** Nome dell'icona in `src/components/Icon.astro`. */
   icon: CalculatorId;
+  /** Colore d'accento di schede, icone e intestazione (vedi .accent-* in global.css). */
+  accent: Accent;
   related: CalculatorId[];
 }
 
+export type Accent = 'violet' | 'amber' | 'rose' | 'blue' | 'cyan' | 'brown' | 'teal';
+
 export const CALCULATORS: CalculatorInfo[] = [
+  {
+    id: 'valore',
+    path: '/quanto-vale-la-mia-casa/',
+    name: 'Quanto vale la mia casa',
+    navLabel: 'Valore casa',
+    summary: 'Stima del valore di mercato con le quotazioni OMI della tua zona, aggiornate con l’ISTAT.',
+    icon: 'valore',
+    accent: 'violet',
+    related: ['istat', 'energia', 'pittura'],
+  },
   {
     id: 'energia',
     path: '/consumo-elettrodomestici/',
@@ -26,6 +40,7 @@ export const CALCULATORS: CalculatorInfo[] = [
     navLabel: 'Consumi',
     summary: 'Quanto ti costa ogni mese e ogni anno il forno, il condizionatore o la TV.',
     icon: 'energia',
+    accent: 'amber',
     related: ['istat', 'pittura', 'parquet'],
   },
   {
@@ -35,6 +50,7 @@ export const CALCULATORS: CalculatorInfo[] = [
     navLabel: 'Pittura',
     summary: 'Litri di pittura e barattoli da comprare per imbiancare una stanza.',
     icon: 'pittura',
+    accent: 'rose',
     related: ['cartongesso', 'piastrelle', 'parquet'],
   },
   {
@@ -44,6 +60,7 @@ export const CALCULATORS: CalculatorInfo[] = [
     navLabel: 'Piastrelle',
     summary: 'Numero di piastrelle e scatole necessarie, con lo scarto giusto per la posa.',
     icon: 'piastrelle',
+    accent: 'blue',
     related: ['parquet', 'pittura', 'cartongesso'],
   },
   {
@@ -53,6 +70,7 @@ export const CALCULATORS: CalculatorInfo[] = [
     navLabel: 'Cartongesso',
     summary: 'Lastre, guide, montanti e viti per una parete o una controparete.',
     icon: 'cartongesso',
+    accent: 'cyan',
     related: ['pittura', 'piastrelle', 'parquet'],
   },
   {
@@ -62,6 +80,7 @@ export const CALCULATORS: CalculatorInfo[] = [
     navLabel: 'Parquet',
     summary: 'Confezioni di parquet e metri di battiscopa in base al tipo di posa.',
     icon: 'parquet',
+    accent: 'brown',
     related: ['piastrelle', 'pittura', 'cartongesso'],
   },
   {
@@ -71,7 +90,8 @@ export const CALCULATORS: CalculatorInfo[] = [
     navLabel: 'Affitto ISTAT',
     summary: 'Aggiornamento del canone con l’indice FOI e lettera pronta per l’inquilino.',
     icon: 'istat',
-    related: ['energia', 'pittura', 'parquet'],
+    accent: 'teal',
+    related: ['valore', 'energia', 'pittura'],
   },
 ];
 

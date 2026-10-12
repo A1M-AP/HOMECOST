@@ -1,10 +1,22 @@
 ---
 import CalculatorLayout from '../layouts/CalculatorLayout.astro';
+import Icon from '../components/Icon.astro';
 import Field from '../components/Field.astro';
 import ProductBox from '../components/ProductBox.astro';
 import { calcPiastrelle, presentPiastrelle, TILE_WASTE, type PiastrelleInput } from '../lib/calc/piastrelle';
+import { currentPrices } from '../lib/istat-data';
 
-const defaults: PiastrelleInput = { superficie: 20, latoA: 60, latoB: 60, m2Scatola: 1.44, scarto: TILE_WASTE.dritta };
+const { prices, note: priceNote } = currentPrices(['materiali', 'manodopera']);
+
+const defaults: PiastrelleInput = {
+  superficie: 20,
+  latoA: 60,
+  latoB: 60,
+  m2Scatola: 1.44,
+  scarto: TILE_WASTE.dritta,
+  prezzoM2: prices.piastrelleM2,
+  prezzoPosaM2: prices.posa.piastrelleM2,
+};
 const outcome = calcPiastrelle(defaults);
 if (!outcome.ok) throw new Error('Valori predefiniti non validi');
 const p = presentPiastrelle(defaults, outcome.result);
@@ -60,7 +72,7 @@ const faq = [
   </div>
 
   <fieldset class="form-group">
-    <legend>Piastrelle</legend>
+    <legend><Icon name="grid" class="legend-icon" />Piastrelle</legend>
     <div class="fields fields--row3">
       <Field id="latoA" label="Lato A" unit="cm" value={defaults.latoA} positive max={400} />
       <Field id="latoB" label="Lato B" unit="cm" value={defaults.latoB} positive max={400} />
@@ -70,7 +82,7 @@ const faq = [
   </fieldset>
 
   <fieldset class="form-group">
-    <legend>Tipo di posa</legend>
+    <legend><Icon name="rotate" class="legend-icon" />Tipo di posa</legend>
     <div class="choices">
       <label class="choice"><input type="radio" name="posa" value="dritta" checked /><span>Dritta (scarto {TILE_WASTE.dritta}%)</span></label>
       <label class="choice"><input type="radio" name="posa" value="diagonale" /><span>Diagonale (scarto {TILE_WASTE.diagonale}%)</span></label>
@@ -79,6 +91,15 @@ const faq = [
       <Field id="scarto" label="Scarto" unit="%" value={defaults.scarto} max={60} hint="Puoi modificarlo: aumentalo con molti angoli o tagli." />
     </div>
   </fieldset>
+
+  <details class="advanced">
+    <summary>Prezzi, posa e spesa stimata</summary>
+    <p class="hint">{priceNote} Inserisci il prezzo delle piastrelle che hai scelto e quello del tuo piastrellista.</p>
+    <div class="fields">
+      <Field id="prezzoM2" label="Piastrelle" unit="€/m²" optional value={prices.piastrelleM2} max={10000} />
+      <Field id="posaM2" label="Posa" unit="€/m²" optional value={prices.posa.piastrelleM2} max={1000} hint="Lascia vuoto se fai da te." />
+    </div>
+  </details>
 
   <Fragment slot="result">
     <p class="result-title">Risultato</p>
@@ -90,6 +111,14 @@ const faq = [
       <div class="kpi">
         <dt>Piastrelle necessarie</dt>
         <dd><span data-out="piastrelle">{p.text.piastrelle}</span><small>formato <span data-out="formato">{p.text.formato}</span></small></dd>
+      </div>
+      <div class="kpi kpi--cost" data-show="costo" hidden={!p.flags?.costo}>
+        <dt>Spesa piastrelle</dt>
+        <dd><span data-out="costo">{p.text.costo}</span><small>scatole acquistate × prezzo al m²</small></dd>
+      </div>
+      <div class="kpi kpi--cost" data-show="posa" hidden={!p.flags?.posa}>
+        <dt>Con la posa</dt>
+        <dd><span data-out="costoTotale">{p.text.costoTotale}</span><small>di cui manodopera <span data-out="costoPosa">{p.text.costoPosa}</span></small></dd>
       </div>
     </dl>
     <dl class="details">
@@ -214,6 +243,8 @@ const faq = [
       latoB: v.latoB!,
       m2Scatola: v.m2Scatola!,
       scarto: v.scarto!,
+      prezzoM2: v.prezzoM2,
+      prezzoPosaM2: v.posaM2,
     }),
     compute: calcPiastrelle,
     present: presentPiastrelle,

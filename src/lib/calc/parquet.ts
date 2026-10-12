@@ -5,8 +5,8 @@
  * confezioni = m² con scarto ÷ m² per confezione (per eccesso)
  * battiscopa = (perimetro − larghezza porte) × (1 + 10%)
  */
-import { fmt, int } from '../format.ts';
-import { ceilSafe, withWaste, type CalcOutcome, type Presentation } from './utils.ts';
+import { euro, fmt, int } from '../format.ts';
+import { ceilSafe, laborCost, sumCosts, withWaste, type CalcOutcome, type Presentation } from './utils.ts';
 
 /** Scarto consigliato per tipo di posa (%). */
 export const PARQUET_WASTE = { dritta: 8, diagonale: 12, spina: 15 } as const;
@@ -27,6 +27,12 @@ export interface ParquetInput {
   perimetro: number;
   /** Larghezza totale delle porte, dove il battiscopa non va posato (m). */
   porte: number;
+  /** Prezzi facoltativi per la spesa stimata. */
+  prezzoM2?: number | null;
+  prezzoBattiscopa?: number | null;
+  /** Manodopera facoltativa: posa del parquet (€/m²) e del battiscopa (€/m). */
+  prezzoPosaM2?: number | null;
+  prezzoPosaBattiscopa?: number | null;
 }
 
 export interface ParquetResult {
@@ -37,6 +43,13 @@ export interface ParquetResult {
   perimetro: number;
   battiscopa: number;
   barreBattiscopa: number;
+  /** Spesa stimata per parquet e battiscopa, null senza prezzi. */
+  costoParquet: number | null;
+  costoBattiscopa: number | null;
+  costo: number | null;
+  /** Manodopera stimata per parquet e battiscopa, null senza prezzi. */
+  costoPosa: number | null;
+  costoTotale: number | null;
 }
 
 export function calcParquet(i: ParquetInput): CalcOutcome<ParquetResult> {
@@ -47,6 +60,14 @@ export function calcParquet(i: ParquetInput): CalcOutcome<ParquetResult> {
   const confezioni = ceilSafe(m2ConScarto / i.m2Confezione);
   const m2Acquistati = confezioni * i.m2Confezione;
   const battiscopa = withWaste(i.perimetro - i.porte, SKIRTING_WASTE);
+  const barreBattiscopa = ceilSafe(battiscopa / SKIRTING_BAR);
+  const costoParquet = i.prezzoM2 ? m2Acquistati * i.prezzoM2 : null;
+  const costoBattiscopa = i.prezzoBattiscopa ? barreBattiscopa * SKIRTING_BAR * i.prezzoBattiscopa : null;
+  const costo = sumCosts(costoParquet, costoBattiscopa);
+  const costoPosa = sumCosts(
+    laborCost(i.superficie, i.prezzoPosaM2),
+    laborCost(i.perimetro - i.porte, i.prezzoPosaBattiscopa),
+  );
   return {
     ok: true,
     result: {
@@ -56,7 +77,12 @@ export function calcParquet(i: ParquetInput): CalcOutcome<ParquetResult> {
       avanzo: m2Acquistati - m2ConScarto,
       perimetro: i.perimetro,
       battiscopa,
-      barreBattiscopa: ceilSafe(battiscopa / SKIRTING_BAR),
+      barreBattiscopa,
+      costoParquet,
+      costoBattiscopa,
+      costo,
+      costoPosa,
+      costoTotale: sumCosts(costo, costoPosa),
     },
   };
 }
@@ -73,8 +99,13 @@ export function presentParquet(i: ParquetInput, r: ParquetResult, perimetroStima
       perimetro: `${fmt(r.perimetro, 2)} m`,
       battiscopa: `${fmt(r.battiscopa, 1)} m`,
       barre: `${int(r.barreBattiscopa)} barre da 2,4 m`,
+      costo: r.costo !== null ? euro(r.costo) : '',
+      costoParquet: r.costoParquet !== null ? euro(r.costoParquet) : '—',
+      costoBattiscopa: r.costoBattiscopa !== null ? euro(r.costoBattiscopa) : '—',
+      costoPosa: r.costoPosa !== null ? euro(r.costoPosa) : '',
+      costoTotale: r.costoTotale !== null ? euro(r.costoTotale) : '',
     },
-    flags: { perimetroStimato },
+    flags: { perimetroStimato, costo: r.costo !== null, posa: r.costoPosa !== null },
   };
 }
 
@@ -84,5 +115,10 @@ export function summaryParquet(i: ParquetInput, r: ParquetResult, perimetroStima
     `Superficie con scarto: ${fmt(r.m2ConScarto, 2)} m²`,
     `Confezioni da acquistare: ${int(r.confezioni)} (${fmt(r.m2Acquistati, 2)} m²)`,
     `Battiscopa: ${fmt(r.battiscopa, 1)} m (${int(r.barreBattiscopa)} barre da 2,4 m)${perimetroStimato ? ' – perimetro stimato' : ''}`,
-  ].join('\n');
+    r.costo !== null ? `Spesa stimata materiali: ${euro(r.costo)}` : '',
+    r.costoPosa !== null ? `Manodopera posa: ${euro(r.costoPosa)}` : '',
+    r.costoPosa !== null && r.costoTotale !== null ? `Spesa totale con la posa: ${euro(r.costoTotale)}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }

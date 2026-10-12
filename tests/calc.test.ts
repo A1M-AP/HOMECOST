@@ -231,3 +231,116 @@ test('istat: calcolo completo da indici, manuale e dati mancanti', async () => {
   assert.equal(p.flags?.bloccato, true);
   assert.match(p.text.nuovoCanone, /800,00/);
 });
+
+test('spesa stimata nei calcolatori', () => {
+  const pia = calcPiastrelle({ superficie: 20, latoA: 60, latoB: 60, m2Scatola: 1.44, scarto: 10, prezzoM2: 25 });
+  assert.ok(pia.ok);
+  close(pia.result.costo!, 16 * 1.44 * 25); // 576 €
+
+  const par = calcParquet({ superficie: 20, m2Confezione: 2.2, scarto: 8, perimetro: 18, porte: 0.8, prezzoM2: 35, prezzoBattiscopa: 4 });
+  assert.ok(par.ok);
+  close(par.result.costoParquet!, 10 * 2.2 * 35);
+  close(par.result.costoBattiscopa!, 8 * 2.4 * 4);
+  close(par.result.costo!, 770 + 76.8);
+
+  const car = calcCartongesso({
+    lunghezza: 4, altezza: 2.7, lati: 2, strati: 1, altezzaLastra: 3, interasse: 60, aperture: 0, scarto: 10,
+    prezzi: { lastra: 9, guida: 4, montante: 5, viti100: 4, tassello: 0.15 },
+  });
+  assert.ok(car.ok);
+  // 8 lastre, 3 guide, 9 montanti, 360 viti → 4 confezioni, 18 tasselli
+  close(car.result.costo!, 8 * 9 + 3 * 4 + 9 * 5 + 4 * 4 + 18 * 0.15);
+
+  const senzaPrezzo = calcPiastrelle({ superficie: 20, latoA: 60, latoB: 60, m2Scatola: 1.44, scarto: 10 });
+  assert.ok(senzaPrezzo.ok && senzaPrezzo.result.costo === null);
+});
+
+test('prezzi rivalutati con l’indice ISTAT', async () => {
+  const { revaluation, revalue, describeRevaluation } = await import('../src/lib/prices.ts');
+  const data = parseIstatData({ '2026-09': 100, '2027-03': 101.5 });
+  const r = revaluation(data, '2026-09');
+  close(r.factor, 1.015);
+  assert.equal(r.toMonth, '2027-03');
+  assert.deepEqual(revalue({ a: 10, b: { c: 2 } }, r.factor), { a: 10.15, b: { c: 2.03 } });
+  assert.match(describeRevaluation(r), /\+1,5%/);
+
+  const vuoto = revaluation(parseIstatData({}), '2026-09');
+  assert.equal(vuoto.factor, 1);
+  assert.match(describeRevaluation(vuoto), /appena sono disponibili/);
+  // Indice del mese base non ancora pubblicato
+  assert.equal(revaluation(parseIstatData({ '2026-08': 99 }), '2026-09').factor, 1);
+});
+
+test('manodopera e spesa totale con la posa', () => {
+  const pit = calcPittura({
+    lunghezza: 4, larghezza: 3, altezza: 2.7, porteN: 0, porteLarghezza: 0.8, porteAltezza: 2.1,
+    finestreN: 0, finestreLarghezza: 1, finestreAltezza: 1, soffitto: false, mani: 2, resa: 10, scarto: 10,
+    prezzi: { 2.5: 20, 5: 32, 10: 55 }, prezzoPosaM2: 6,
+  });
+  assert.ok(pit.ok);
+  close(pit.result.costoPosa!, 37.8 * 6); // pareti 2 × 7 × 2,7 = 37,8 m²
+  close(pit.result.costoTotale!, pit.result.migliore.costo! + 37.8 * 6);
+
+  const pia = calcPiastrelle({ superficie: 20, latoA: 60, latoB: 60, m2Scatola: 1.44, scarto: 10, prezzoM2: 25, prezzoPosaM2: 30 });
+  assert.ok(pia.ok);
+  close(pia.result.costoPosa!, 600); // posa sulla superficie netta, non sulle scatole
+  close(pia.result.costoTotale!, 576 + 600);
+
+  // Solo manodopera, senza prezzo dei materiali
+  const soloPosa = calcPiastrelle({ superficie: 10, latoA: 60, latoB: 60, m2Scatola: 1.44, scarto: 10, prezzoPosaM2: 30 });
+  assert.ok(soloPosa.ok && soloPosa.result.costo === null);
+  close(soloPosa.result.costoTotale!, 300);
+
+  const car = calcCartongesso({
+    lunghezza: 4, altezza: 2.5, lati: 2, strati: 1, altezzaLastra: 2.5, interasse: 60, aperture: 1, scarto: 10, prezzoPosaM2: 15,
+  });
+  assert.ok(car.ok);
+  close(car.result.costoPosa!, (10 - 1) * 2 * 15); // m² di parete × lati
+  assert.equal(car.result.costo, null);
+
+  const par = calcParquet({
+    superficie: 20, m2Confezione: 2.2, scarto: 8, perimetro: 18, porte: 0.8, prezzoPosaM2: 20, prezzoPosaBattiscopa: 4,
+  });
+  assert.ok(par.ok);
+  close(par.result.costoPosa!, 20 * 20 + (18 - 0.8) * 4);
+
+  const fai = calcParquet({ superficie: 20, m2Confezione: 2.2, scarto: 8, perimetro: 18, porte: 0.8, prezzoM2: 35 });
+  assert.ok(fai.ok && fai.result.costoPosa === null);
+  close(fai.result.costoTotale!, fai.result.costo!);
+});
+
+test('prezzi rivalutati con l’indice ISTAT della loro voce di spesa', async () => {
+  const { parsePriceIndices, categoryRevaluation, describeCategories } = await import('../src/lib/prices.ts');
+  const foi = parseIstatData({ '2026-09': 100, '2026-11': 100.5 });
+  const nic = parsePriceIndices({
+    _aggiornato: '2026-12-01',
+    elettricita: { '2026-09': 115.7, '2026-10': 118, '2026-11': 121.485 },
+    materiali: { '2026-08': 102 }, // manca il mese base: si usa il FOI
+    manodopera: { '2026-09': 103.4, 'x': 1, '2026-10': 'n.d.' },
+    altro: { '2026-09': 1 },
+  });
+  assert.deepEqual(Object.keys(nic.serie).sort(), ['elettricita', 'manodopera', 'materiali']);
+  assert.deepEqual(nic.serie.manodopera, { '2026-09': 103.4 });
+
+  const el = categoryRevaluation('elettricita', nic, foi, '2026-09');
+  close(el.factor, 1.05);
+  assert.equal(el.toMonth, '2026-11');
+  assert.equal(el.source, 'voce');
+
+  const mat = categoryRevaluation('materiali', nic, foi, '2026-09');
+  close(mat.factor, 1.005);
+  assert.equal(mat.source, 'generale');
+
+  const man = categoryRevaluation('manodopera', nic, foi, '2026-09');
+  assert.equal(man.factor, 1);
+  assert.equal(man.toMonth, null);
+
+  const note = describeCategories([['elettricita', el], ['materiali', mat], ['manodopera', man]]);
+  assert.match(note, /settembre 2026/);
+  assert.match(note, /novembre 2026/);
+  assert.match(note, /energia elettrica \+5%/);
+  assert.match(note, /indice generale FOI/);
+  assert.doesNotMatch(note, /servizi di manutenzione/);
+
+  assert.match(describeCategories([['manodopera', man]]), /si aggiornano da soli/);
+});
