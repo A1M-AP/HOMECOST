@@ -3,7 +3,7 @@
   "_fonte": "ISTAT - Indici dei prezzi al consumo per le famiglie di operai e impiegati (FOI) senza tabacchi - https://esploradati.istat.it/",
   "_base": "2025=100",
   "_raccordo": "Valori fino a 2025-12 divisi per 1.214 (media 2025 in base 2015 / 100)",
-  "_aggiornato": "2026-09-27",
+  "_aggiornato": "2026-10-16",
   "2016-01": 82.1252,
   "2016-02": 81.9605,
   "2016-03": 82.0428,
@@ -131,5 +131,6 @@
   "2026-05": 102.8,
   "2026-06": 102.8,
   "2026-07": 103.1,
-  "2026-08": 103.7
+  "2026-08": 103.7,
+  "2026-09": 104.3
 }

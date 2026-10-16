@@ -1,7 +1,7 @@
 {
  "_istruzioni": "File aggiornato in automatico da scripts/update-istat.mjs (GitHub Actions). Indici dei prezzi al consumo NIC per voce di spesa (ECOICOP v2), base 2025=100, mensili. Chiavi: elettricita (04510), materiali (04311), manodopera (04320).",
  "_fonte": "ISTAT - Prezzi al consumo per l’intera collettività (NIC) - https://esploradati.istat.it/",
- "_aggiornato": "2026-10-02",
+ "_aggiornato": "2026-10-16",
  "elettricita": {
   "2026-01": 103.4,
   "2026-02": 103.1,
@@ -11,7 +11,7 @@
   "2026-06": 107.8,
   "2026-07": 112.2,
   "2026-08": 113.5,
-  "2026-09": 115.7
+  "2026-09": 116.8
  },
  "materiali": {
   "2026-01": 100.7,
